@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         php-version: [8.1]
-        arch: [amd64, i386, aarch64]
+        arch: [amd64, i386]
 
     steps:
       - name: Checkout repository
