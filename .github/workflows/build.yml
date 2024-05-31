@@ -1,168 +1,70 @@
-name: Build
-
-on:
-  push:
-    tags:
-      - 'v*.*.*'
-
-env:
-  EXTENSION_NAME: php_rocksdb_rc
+---
+name: Build and Lint
+on: [push, pull_request]
 
 jobs:
-  linux:
-    runs-on: ubuntu-latest
-    services:
-      registry:
-        image: registry:2
-        ports:
-          - 5000:5000
+  build:
+    name: Build and Test
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        include:
-          - target: x86_64-unknown-linux-gnu
-            platform: linux/amd64
-            php-version: '8.0'
-          - os: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            platform: linux/arm64
-            php-version: '8.0'
-          - target: x86_64-unknown-linux-gnu
-            platform: linux/amd64
-            php-version: '8.1'
-          - os: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            platform: linux/arm64
-            php-version: '8.1'
-          - target: x86_64-unknown-linux-gnu
-            platform: linux/amd64
-            php-version: '8.2'
-          - os: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            platform: linux/arm64
-            php-version: '8.2'
-          - target: x86_64-unknown-linux-gnu
-            platform: linux/amd64
-            php-version: '8.3'
-          - os: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            platform: linux/arm64
-            php-version: '8.3'
+        os: [ubuntu-22.04]
+        # os: [windows-2019, macos-latest, ]
+        # phpts: [ts, nts]
+        phpts: [nts, ts]
+        rust: [stable]
+        php: ["8.1"]
+        exclude:
+          # setup-php doesn't support thread safe PHP on Linux and macOS.
+          - os: macos-latest
+            phpts: ts
+          - os: ubuntu-22.04
+            phpts: ts
+    env:
+      CARGO_TERM_COLOR: always
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
-          submodules: recursive
-
-      - uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ matrix.php-version }}-${{ matrix.target }}
-
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v2
-        with:
-          driver-opts: network=host
-
-      - name: Setup docker
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          platforms: ${{ matrix.platform }}
-          push: true
-          tags: localhost:5000/php-build:latest
-          build-args: |
-            FROM_PHP=${{ matrix.php-version }}
-
-      - name: Build
-        run: |
-          docker run -v ~/.cargo/registry:/root/.cargo/registry -v ~/.cargo/git:/root/.cargo/git --platform ${{ matrix.platform }} --rm -v $PWD:/code localhost:5000/php-build:latest bash -c 'rustup target add ${{ matrix.target }} ; cargo build --release --target ${{ matrix.target }}'
-
-      - name: Rename file
-        run: cp target/${{ matrix.target }}/release/lib${{ env.EXTENSION_NAME }}.so php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.so
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: php${{ matrix.php-version }}-${{ matrix.target }}
-          path: php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.so
-
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.so
+          php-version: ${{ matrix.php }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-#  macos:
-#    runs-on: macos-latest
-#    strategy:
-#      matrix:
-#        include:
-#          - target: aarch64-apple-darwin
-#            php-version: '8.0'
-#          - target: x86_64-apple-darwin
-#            php-version: '8.0'
-#          - target: aarch64-apple-darwin
-#            php-version: '8.1'
-#          - target: x86_64-apple-darwin
-#            php-version: '8.1'
-#          - target: aarch64-apple-darwin
-#            php-version: '8.2'
-#          - target: x86_64-apple-darwin
-#            php-version: '8.2'
-#          - target: aarch64-apple-darwin
-#            php-version: '8.3'
-#          - target: x86_64-apple-darwin
-#            php-version: '8.3'
-#
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v2
-#        with:
-#          submodules: recursive
-#
-#      - uses: actions/cache@v2
-#        with:
-#          path: |
-#            ~/.cargo/registry
-#            ~/.cargo/git
-#            target
-#          key: ${{ matrix.php-version }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-#
-#      - name: Install latest rust toolchain
-#        uses: actions-rs/toolchain@v1
-#        with:
-#          toolchain: stable
-#          target: ${{ matrix.target }}
-#          default: true
-#          override: true
-#      - name: Setup PHP version
-#        run: brew install php@${{ matrix.php-version }} && brew unlink php && brew link --force php@${{ matrix.php-version }}
-#      - name: Build
-#        uses: actions-rs/cargo@v1
-#        with:
-#          use-cross: false
-#          command: build
-#          args: --release --target ${{ matrix.target }} --lib
-#
-#      - name: Rename file
-#        run: mv target/${{ matrix.target }}/release/lib${{ env.EXTENSION_NAME }}.dylib target/php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.dylib
-#
-#      - uses: actions/upload-artifact@v3
-#        with:
-#          name: php${{ matrix.php-version }}-${{ matrix.target }}
-#          path: target/php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.dylib
-#
-#      - name: Release
-#        uses: softprops/action-gh-release@v1
-#        with:
-#          files: |
-#            target/php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.dylib
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          phpts: ${{ matrix.phpts }}
+          debug: true
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt, clippy
+      - run: rustup show
+      - name: Cache cargo dependencies
+        uses: Swatinem/rust-cache@v2
+        # Uncomment the following if statement if caching nightly deps
+        # ends up causing too much cache invalidation.
+        # if: matrix.rust == 'stable'
+        with:
+          # increment this manually to force cache eviction
+          prefix-key: "v0-rust"
+      # Build
+      - name: Build
+        env:
+          EXT_PHP_RS_TEST: ""
+        run: cargo build --release
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: artifacts-${{ matrix.os }}-${{ matrix.php }}-${{ matrix.phpts }}
+          path: |
+            target/release/php_rocksdb_rc.dll
+            target/release/libphp_rocksdb_rc.dylib
+            target/release/libphp_rocksdb_rc.so
+      # Test & lint
+      # - name: Test inline examples
+      #   run: cargo test --release --all --all-features
+      # - name: Run rustfmt
+      #   if: matrix.rust == 'stable' && matrix.os == 'ubuntu-20.04' && matrix.php == '8.2'
+      #   run: cargo fmt --all -- --check
+      # - name: Run clippy
+      #   if: matrix.rust == 'stable' && matrix.os == 'ubuntu-20.04' && matrix.php == '8.2'
+      #   run: cargo clippy --all -- -D warnings
