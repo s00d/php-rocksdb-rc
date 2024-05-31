@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         php-version: [8.1, 8.2, 8.3] # Add more PHP versions as needed
-        arch: [x86_64, aarch64]
+        arch: [x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu]
 
     steps:
       - name: Checkout repository
@@ -31,16 +31,16 @@ jobs:
           target: ${{ matrix.arch }}
 
       - name: Install Rust target
-        run: rustup target add ${{ matrix.arch }}-unknown-linux-gnu
+        run: rustup target add ${{ matrix.arch }}
 
       - name: Build project
-        run: cargo build --release --target ${{ matrix.arch }}-unknown-linux-gnu
+        run: cargo build --release --target ${{ matrix.arch }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v2
         with:
           name: libphprocksdb-${{ matrix.php-version }}-${{ matrix.arch }}
-          path: target/${{ matrix.arch }}-unknown-linux-gnu/release/libphprocksdb.so
+          path: target/${{ matrix.arch }}/release/libphprocksdb.so
 
   release:
     runs-on: ubuntu-latest
