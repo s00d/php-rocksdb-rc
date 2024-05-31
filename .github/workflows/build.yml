@@ -31,9 +31,19 @@ jobs:
           tools: php-config
           extensions: mbstring
 
-      - name: Install Rust and add target
+      - name: Install Rust
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          echo 'source $HOME/.cargo/env' >> $GITHUB_ENV
+
+      - name: Verify Rust installation
+        run: |
+          source $HOME/.cargo/env
+          rustc --version
+          cargo --version
+
+      - name: Add Rust target
+        run: |
           source $HOME/.cargo/env
           rustup target add ${{ matrix.arch.rust_target }}
 
