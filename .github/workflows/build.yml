@@ -77,15 +77,8 @@ jobs:
             FROM_PHP=${{ matrix.php-version }}
 
       - name: Build
-        run: docker run -v ~/.cargo/registry:/root/.cargo/registry -v ~/.cargo/git:/root/.cargo/git --platform ${{ matrix.platform }} --rm -v $PWD:/code localhost:5000/php-build:latest /bin/bash -c "rustup target add ${{ matrix.target }} && cargo build --release --target ${{ matrix.target }}"
-#        run: docker run --rm \
-#              -v ~/.cargo/registry:/root/.cargo/registry \
-#              -v ~/.cargo/git:/root/.cargo/git \
-#              --platform ${{ matrix.platform }} \
-#              -v ${{ github.workspace }}:/code \
-#              -w /code \
-#              localhost:5000/php-build:latest \
-#              bash -c "source $HOME/.cargo/env && rustup target add ${{ matrix.target }} && cargo build --release --target ${{ matrix.target }}"
+        run: |
+          docker run -v ~/.cargo/registry:/root/.cargo/registry -v ~/.cargo/git:/root/.cargo/git --platform ${{ matrix.platform }} --rm -v $PWD:/code localhost:5000/php-build:latest bash -c "rustup target add ${{ matrix.target }} && cargo build --release --target ${{ matrix.target }}"
 
       - name: Rename file
         run: cp target/${{ matrix.target }}/release/lib${{ env.EXTENSION_NAME }}.so php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.so
