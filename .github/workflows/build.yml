@@ -8,15 +8,19 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: shivammathur/node:latest-${{ matrix.arch }}
 
     strategy:
       matrix:
-        php-version: [8.1] # Add more PHP versions as needed
-        arch: [x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu]
+        php-version: [8.1]
+        arch: [amd64, i386, aarch64]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc-multilib g++-multilib gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -25,34 +29,23 @@ jobs:
           tools: php-config
           extensions: mbstring
 
-      - name: Install cross-compilation tools for aarch64
-        if: matrix.arch == 'aarch64-unknown-linux-gnu'
-        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
-
-      - name: Install cross-compilation tools for x86_64
-        if: matrix.arch == 'x86_64-unknown-linux-gnu'
-        run: sudo apt-get update && sudo apt-get install -y gcc-multilib
-
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: ${{ matrix.arch }}
+          target: ${{ matrix.arch }}-unknown-linux-gnu
 
       - name: Install Rust target
-        run: rustup target add ${{ matrix.arch }}
+        run: rustup target add ${{ matrix.arch }}-unknown-linux-gnu
 
       - name: Build project
-        env:
-          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
-          CXXFLAGS: "-march=armv8-a"
-        run: cargo build --release --target ${{ matrix.arch }}
+        run: cargo build --release --target ${{ matrix.arch }}-unknown-linux-gnu
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v2
         with:
           name: libphprocksdb-${{ matrix.php-version }}-${{ matrix.arch }}
-          path: target/${{ matrix.arch }}/release/libphprocksdb.so
+          path: target/${{ matrix.arch }}-unknown-linux-gnu/release/libphprocksdb.so
 
   release:
     runs-on: ubuntu-latest
