@@ -8,12 +8,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: shivammathur/node:latest-${{ matrix.arch }}
+    container: shivammathur/php:latest-${{ matrix.arch.name }}
 
     strategy:
       matrix:
         php-version: [8.1]
-        arch: [amd64, i386]
+        arch:
+          - { name: "amd64", rust_target: "x86_64-unknown-linux-gnu" }
+          - { name: "i386", rust_target: "i686-unknown-linux-gnu" }
 
     steps:
       - name: Checkout repository
@@ -33,19 +35,19 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: ${{ matrix.arch }}-unknown-linux-gnu
+          target: ${{ matrix.arch.rust_target }}
 
       - name: Install Rust target
-        run: rustup target add ${{ matrix.arch }}-unknown-linux-gnu
+        run: rustup target add ${{ matrix.arch.rust_target }}
 
       - name: Build project
-        run: cargo build --release --target ${{ matrix.arch }}-unknown-linux-gnu
+        run: cargo build --release --target ${{ matrix.arch.rust_target }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: libphprocksdb-${{ matrix.php-version }}-${{ matrix.arch }}
-          path: target/${{ matrix.arch }}-unknown-linux-gnu/release/libphprocksdb.so
+          name: libphprocksdb-${{ matrix.php-version }}-${{ matrix.arch.name }}
+          path: target/${{ matrix.arch.rust_target }}/release/libphprocksdb.so
 
   release:
     runs-on: ubuntu-latest
@@ -57,7 +59,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v2
         with:
-          name: libphprocksdb-${{ matrix.php-version }}-${{ matrix.arch }}
+          name: libphprocksdb-${{ matrix.php-version }}-${{ matrix.arch.name }}
           path: artifacts
 
       - name: Create release
@@ -78,5 +80,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: artifacts
-          asset_name: libphprocksdb-${{ matrix.php-version }}-${{ matrix.arch }}.so
+          asset_name: libphprocksdb-${{ matrix.php-version }}-${{ matrix.arch.name }}.so
           asset_content_type: application/octet-stream
