@@ -1,0 +1,77 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Triggers on new version tags
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        php-version: [8.1, 8.2, 8.3] # Add more PHP versions as needed
+        arch: [x86_64, aarch64]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.arch }}
+
+      - name: Install Rust target
+        run: rustup target add ${{ matrix.arch }}-unknown-linux-gnu
+
+      - name: Build project
+        run: cargo build --release --target ${{ matrix.arch }}-unknown-linux-gnu
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: libphprocksdb-${{ matrix.php-version }}-${{ matrix.arch }}
+          path: target/${{ matrix.arch }}-unknown-linux-gnu/release/libphprocksdb.so
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: libphprocksdb-${{ matrix.php-version }}-${{ matrix.arch }}
+          path: artifacts
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload release assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts
+          asset_name: libphprocksdb-${{ matrix.php-version }}-${{ matrix.arch }}.so
+          asset_content_type: application/octet-stream
