@@ -11,7 +11,7 @@ jobs:
 
     strategy:
       matrix:
-        php-version: [8.1, 8.2] # Add more PHP versions as needed
+        php-version: [8.1] # Add more PHP versions as needed
         arch: [x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu]
 
     steps:
