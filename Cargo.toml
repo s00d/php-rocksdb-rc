@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "phprocksdb"
+name = "libphprocksdb"
 path = "src/lib.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
 ext-php-rs = "*"
-rust-rocksdb = { version = "^0.22", features = ["multi-threaded-cf"] }
+rust-rocksdb = { version = "^0.26", features = ["multi-threaded-cf"] }
