@@ -10,3 +10,10 @@ crate-type = ["cdylib"]
 [dependencies]
 ext-php-rs = "*"
 rust-rocksdb = { version = "^0.26", features = ["multi-threaded-cf"] }
+
+[profile.release]
+opt-level = "z" # Оптимизация для размера
+lto = true # Включение Link Time Optimization
+codegen-units = 1 # Уменьшение количества единиц компиляции для лучшей оптимизации
+panic = "abort" # Уменьшение объема кода для обработки паник
+strip = true # Удаление символов отладки
