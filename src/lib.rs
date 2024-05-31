@@ -11,13 +11,21 @@ pub struct RocksDB {
 #[php_impl]
 impl RocksDB {
     #[constructor]
-    pub fn __construct(path: String, ttl_secs: u64) -> PhpResult<Self> {
-        let ttl = Duration::from_secs(ttl_secs);
+    pub fn __construct(path: String, ttl_secs: Option<u64>) -> PhpResult<Self> {
         let mut opts = Options::default();
         opts.create_if_missing(true);
         opts.set_max_open_files(1000);
         opts.set_log_level(rust_rocksdb::LogLevel::Warn);
-        match DB::open_with_ttl(&opts, path, ttl) {
+
+        let db = match ttl_secs {
+            Some(ttl) => {
+                let duration = Duration::from_secs(ttl);
+                DB::open_with_ttl(&opts, &path, duration)
+            },
+            None => DB::open(&opts, &path),
+        };
+
+        match db {
             Ok(db) => Ok(RocksDB { db: Arc::new(db) }),
             Err(e) => Err(e.to_string().into()),
         }
