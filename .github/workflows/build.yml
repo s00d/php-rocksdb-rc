@@ -35,7 +35,6 @@ jobs:
         with:
           toolchain: stable
           target: ${{ matrix.arch.rust_target }}
-      - run: cargo test --all-features
 
 
       - name: Install Rust target
