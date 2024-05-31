@@ -11,7 +11,7 @@ jobs:
 
     strategy:
       matrix:
-        php-version: [8.1, 8.2, 8.3] # Add more PHP versions as needed
+        php-version: [8.1, 8.2] # Add more PHP versions as needed
         arch: [x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu]
 
     steps:
@@ -24,6 +24,14 @@ jobs:
           php-version: ${{ matrix.php-version }}
           extensions: mbstring
 
+      - name: Install cross-compilation tools
+        if: matrix.arch == 'aarch64-unknown-linux-gnu'
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Install cross-compilation tools
+        if: matrix.arch == 'x86_64-unknown-linux-gnu'
+        run: sudo apt-get update && sudo apt-get install -y gcc-multilib
+
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -34,6 +42,8 @@ jobs:
         run: rustup target add ${{ matrix.arch }}
 
       - name: Build project
+        env:
+          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
         run: cargo build --release --target ${{ matrix.arch }}
 
       - name: Upload build artifacts
