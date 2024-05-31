@@ -37,9 +37,6 @@ jobs:
           source $HOME/.cargo/env
           rustup target add ${{ matrix.arch.rust_target }}
 
-      - name: Install Rust target
-        run: rustup target add ${{ matrix.arch.rust_target }}
-
       - name: Build project
         run: cargo build --release --target ${{ matrix.arch.rust_target }}
 
