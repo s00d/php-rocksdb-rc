@@ -2,6 +2,9 @@ name: Build
 
 on: [push]
 
+permissions:
+  contents: write
+
 env:
   EXTENSION_NAME: php_rocksdb_rc
 
@@ -105,33 +108,15 @@ jobs:
           VERSION=$(grep '^version =' Cargo.toml | head -n 1 | sed 's/.*"\(.*\)".*/\1/')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Check and Create Release
-        id: release
-        uses: actions/github-script@v6
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
         with:
-          script: |
-            const version = process.env.VERSION;
-            const [owner, repo] = process.env.GITHUB_REPOSITORY.split("/");
-            const { data: releases } = await github.rest.repos.listReleases({
-              owner,
-              repo
-            });
-            const releaseExists = releases.some(release => release.tag_name === version);
-            if (!releaseExists) {
-              const release = await github.rest.repos.createRelease({
-                owner,
-                repo,
-                tag_name: version,
-                name: `Release ${version}`,
-                draft: false,
-                prerelease: false
-              });
-              return { id: release.data.id };
-            } else {
-              return { id: releases.find(release => release.tag_name === version).id };
-            }
+          tag_name: ${{ env.VERSION }}
+          name: Release ${{ env.VERSION }}
+          draft: false
+          prerelease: false
         env:
-          VERSION: ${{ env.VERSION }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Release Asset
