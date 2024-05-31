@@ -35,7 +35,6 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: ${{ matrix.arch.rust_target }}
 
       - name: Install Rust target
         run: rustup target add ${{ matrix.arch.rust_target }}
