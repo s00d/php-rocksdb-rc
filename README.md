@@ -66,17 +66,17 @@ To build the extension from source, you will need Rust and Cargo installed. Foll
 
 3. Copy the built library to your PHP extensions directory:
 
-    - On Linux:
+   - On Linux:
 
-        ```sh
-        cp target/release/libphp_rocksdb_rc.so /usr/lib/php/extensions/
-        ```
+       ```sh
+       cp target/release/libphp_rocksdb_rc.so /usr/lib/php/extensions/
+       ```
 
-    - On macOS:
+   - On macOS:
 
-        ```sh
-        cp target/release/libphp_rocksdb_rc.dylib /usr/local/lib/php/extensions/
-        ```
+       ```sh
+       cp target/release/libphp_rocksdb_rc.dylib /usr/local/lib/php/extensions/
+       ```
 
 4. Add the following line to your `php.ini` file:
 
@@ -124,7 +124,7 @@ $value = $db->get("key2", "new_cf");
 echo $value; // Outputs: value2
 
 // List column families
-$column_families = RocksDB::listColumnFamilies("/path/to/db");
+$column_families = $db->listColumnFamilies("/path/to/db");
 print_r($column_families);
 
 // Drop a column family
@@ -291,14 +291,26 @@ print_r($keys);
 ?>
 ```
 
+### Iterator Methods
+
+#### `__construct(path: String, ttl_secs: Option<u64>)`
+Creates a new RocksDBIterator instance.
+
+```php
+<?php
+$iterator = new \RocksDBIterator("/path/to/db", 3600); // 3600 seconds TTL
+?>
+```
+
 #### `iterator(cf_name: Option<String>)`
 Initializes an iterator for the database or column family.
 
 ```php
 <?php
-$db->iterator();
+$iterator = new \RocksDBIterator($dbPath);
+$iterator->iterator();
 while (true) {
-    $batch = $db->next(2);
+    $batch = $iterator->next(2);
     if (empty($batch)) {
         break;
     }
@@ -312,9 +324,9 @@ Gets the next batch of key-value pairs from the iterator.
 
 ```php
 <?php
-$db->iterator();
+$iterator->iterator();
 while (true) {
-    $batch = $db->next(2);
+    $batch = $iterator->next(2);
     if (empty($batch)) {
         break;
     }
@@ -328,184 +340,220 @@ Resets the iterator.
 
 ```php
 <?php
-$db->reset();
+$iterator->reset();
 ?>
 ```
 
 ### Backup Methods
 
-#### `backupInit(backup_path: String)`
+#### `__construct(path: String, ttl_secs: Option<u64>)`
+Creates a new RocksDBBackup instance.
+
+```php
+<?php
+$backup = new \RocksDBBackup("/path/to/db", 3600); // 3600 seconds TTL
+?>
+```
+
+#### `init(backup_path: String)`
 Initializes the backup engine with the specified path.
 
 ```php
 <?php
-$db->backupInit("/path/to/backup");
+$backup->init("/path/to/backup");
 ?>
 ```
 
-#### `createBackup()`
+#### `create()`
 Creates a backup of the database.
 
 ```php
 <?php
-$db->backupInit("/path/to/backup");
-$db->createBackup();
+
+
+$backup->init("/path/to/backup");
+$backup->create();
 ?>
 ```
 
-#### `getBackupInfo()`
+#### `info()`
 Returns information about the backups.
 
 ```php
 <?php
-$db->backupInit("/path/to/backup");
-$info = $db->getBackupInfo();
+$backup->init("/path/to/backup");
+$info = $backup->info();
 print_r($info);
 ?>
 ```
 
-#### `purgeOldBackups(num_backups_to_keep: usize)`
+#### `purge_old(num_backups_to_keep: usize)`
 Purges old backups, keeping the specified number of backups.
 
 ```php
 <?php
-$db->backupInit("/path/to/backup");
-$db
-
-->purgeOldBackups(2);
+$backup->init("/path/to/backup");
+$backup->purge_old(2);
 ?>
 ```
 
-#### `restoreBackup(backup_id: u32, restore_path: String)`
+#### `restore(backup_id: u32, restore_path: String)`
 Restores the database from a backup.
 
 ```php
 <?php
-$db->backupInit("/path/to/backup");
-$db->restoreBackup(1, "/path/to/restore");
+$backup->init("/path/to/backup");
+$backup->restore(1, "/path/to/restore");
 ?>
 ```
 
 ### Write Batch Methods
 
-#### `startWriteBatch()`
+#### `__construct(path: String, ttl_secs: Option<u64>)`
+Creates a new RocksDBWriteBatch instance.
+
+```php
+<?php
+$write_batch = new \RocksDBWriteBatch("/path/to/db", 3600); // 3600 seconds TTL
+?>
+```
+
+#### `start()`
 Starts a new write batch.
 
 ```php
 <?php
-$db->startWriteBatch();
+$write_batch->start();
 ?>
 ```
 
-#### `putInBatch(key: String, value: String, cf_name: Option<String>)`
+#### `put(key: String, value: String, cf_name: Option<String>)`
 Puts a key-value pair into the current write batch.
 
 ```php
 <?php
-$db->startWriteBatch();
-$db->putInBatch("key1", "value1");
-$db->putInBatch("key2", "value2", "new_cf"); // Using column family
+$write_batch->start();
+$write_batch->put("key1", "value1");
+$write_batch->put("key2", "value2", "new_cf"); // Using column family
 ?>
 ```
 
-#### `mergeInBatch(key: String, value: String, cf_name: Option<String>)`
+#### `merge(key: String, value: String, cf_name: Option<String>)`
 Merges a value into the current write batch.
 
 ```php
 <?php
-$db->startWriteBatch();
-$db->mergeInBatch("json_obj_key", "employees[1].first_name = lucy");
-$db->mergeInBatch("json_obj_key", "employees[0].last_name = dow", "new_cf"); // Using column family
+$write_batch->start();
+$write_batch->merge("json_obj_key", "employees[1].first_name = lucy");
+$write_batch->merge("json_obj_key", "employees[0].last_name = dow", "new_cf"); // Using column family
 ?>
 ```
 
-#### `deleteInBatch(key: String, cf_name: Option<String>)`
+#### `delete(key: String, cf_name: Option<String>)`
 Deletes a key-value pair from the current write batch.
 
 ```php
 <?php
-$db->startWriteBatch();
-$db->deleteInBatch("key1");
-$db->deleteInBatch("key2", "new_cf"); // From column family
+$write_batch->start();
+$write_batch->delete("key1");
+$write_batch->delete("key2", "new_cf"); // From column family
 ?>
 ```
 
-#### `writeBatch()`
+#### `write()`
 Writes the current write batch to the database.
 
 ```php
 <?php
-$db->startWriteBatch();
-$db->writeBatch();
+$write_batch->start();
+$write_batch->write();
 ?>
 ```
 
-#### `clearBatch()`
+#### `clear()`
 Clears the current write batch.
 
 ```php
 <?php
-$db->startWriteBatch();
-$db->clearBatch();
+$write_batch->start();
+$write_batch->clear();
 ?>
 ```
 
-#### `destroyBatch()`
+#### `destroy()`
 Destroys the current write batch.
 
 ```php
 <?php
-$db->startWriteBatch();
-$db->destroyBatch();
+$write_batch->start();
+$write_batch->destroy();
 ?>
 ```
 
 ### Snapshot Methods
 
-#### `createSnapshot()`
+#### `__construct(path: String, ttl_secs: Option<u64>)`
+Creates a new RocksDBSnapshot instance.
+
+```php
+<?php
+$snapshot = new \RocksDBSnapshot("/path/to/db", 3600); // 3600 seconds TTL
+?>
+```
+
+#### `create()`
 Creates a snapshot of the current state of the database.
 
 ```php
 <?php
-$db->createSnapshot();
+$snapshot->create();
 ?>
 ```
 
-#### `releaseSnapshot()`
+#### `release()`
 Releases the current snapshot.
 
 ```php
 <?php
-$db->releaseSnapshot();
+$snapshot->release();
 ?>
 ```
 
 ### Transaction Methods
 
-#### `startTransaction()`
+#### `__construct(path: String, ttl_secs: Option<u64>)`
+Creates a new RocksDBTransaction instance.
+
+```php
+<?php
+$transaction = new \RocksDBTransaction("/path/to/db", 3600); // 3600 seconds TTL
+?>
+```
+
+#### `start()`
 Starts a new transaction.
 
 ```php
 <?php
-$db->startTransaction();
+$transaction->start();
 ?>
 ```
 
-#### `commitTransaction()`
+#### `commit()`
 Commits the current transaction.
 
 ```php
 <?php
-$db->commitTransaction();
+$transaction->commit();
 ?>
 ```
 
-#### `rollbackTransaction()`
+#### `rollback()`
 Rolls back the current transaction.
 
 ```php
 <?php
-$db->rollbackTransaction();
+$transaction->rollback();
 ?>
 ```
 
@@ -514,7 +562,7 @@ Sets a savepoint within the current transaction.
 
 ```php
 <?php
-$db->setSavepoint();
+$transaction->setSavepoint();
 ?>
 ```
 
@@ -523,50 +571,63 @@ Rolls back the transaction to the last savepoint.
 
 ```php
 <?php
-$db->rollbackToSavepoint();
+$transaction->rollbackToSavepoint();
 ?>
 ```
 
-#### `putInTransaction(key: String, value: String, cf_name: Option<String>)`
+#### `put(key: String, value: String, cf_name: Option<String>)`
 Puts a key-value pair into the current transaction.
 
 ```php
 <?php
-$db->putInTransaction("key1", "value1");
-$db->putInTransaction("key2", "value2", "new_cf"); // Using column family
+$transaction->put("key1", "value1");
+$transaction->put("key2", "value2", "new_cf"); // Using column family
 ?>
 ```
 
-#### `getInTransaction(key: String, cf_name: Option<String>)`
+#### `get(key: String, cf_name: Option<String>)`
 Gets the value associated with the given key within the current transaction.
 
 ```php
 <?php
-$value = $db->getInTransaction("key1");
+$value = $transaction->get("key1");
 echo $value; // Outputs: value1
 
-$value = $db->getInTransaction("key2", "new_cf"); // From column family
+$value = $transaction->get("key2", "new_cf"); // From column family
 echo $value; // Outputs: value2
 ?>
 ```
 
-#### `deleteInTransaction(key: String, cf_name: Option<String>)`
+#### `delete(key: String, cf_name: Option<String>)`
 Deletes a key-value pair within the current transaction.
 
 ```php
 <?php
-$db->deleteInTransaction("key1");
-$db->deleteInTransaction("key2", "new_cf"); // From column family
+$transaction->delete("key1");
+$transaction->delete("key2", "new_cf"); // From column family
 ?>
 ```
 
-#### `mergeInTransaction(key: String, value: String, cf_name: Option<String>)`
+#### `merge(key: String, value: String, cf_name: Option<String>)`
 Merges a value within the current transaction.
 
 ```php
 <?php
-$db->mergeInTransaction("json_obj_key", "employees[1].first_name = lucy");
-$db->mergeInTransaction("json_obj_key", "employees[0].last_name = dow", "new_cf"); // Using column family
+$transaction->merge("json_obj_key", "employees[1].first_name = lucy");
+$transaction->merge("json_obj_key", "employees[0].last_name = dow", "new_cf"); // Using column family
+?>
+```
+
+## Important Note
+
+Before creating a new instance of any class (e.g., `RocksDB`, `RocksDBIterator`, `RocksDBBackup`, `RocksDBWriteBatch`, `RocksDBSnapshot`, `RocksDBTransaction`), ensure to destroy the previous instance to free up the database connection.
+
+```php
+<?php
+$db = new \RocksDB($dbPath);
+$db = null; // Free the connection
+
+$iterator = new \RocksDBIterator($dbPath); // Now you can create a new instance
 ?>
 ```
 
