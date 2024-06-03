@@ -1,5 +1,5 @@
 [package]
-name = "php-rocksdb-rc"
+name = "php_rocksdb_rc"
 version = "0.3.0"
 edition = "2021"
 
@@ -11,9 +11,20 @@ crate-type = ["cdylib"]
 ext-php-rs = "*"
 rust-rocksdb = { version = "^0.26", features = ["multi-threaded-cf"] }
 
+[profile.integration-test]
+inherits = "dev"
+incremental = false
+
 [profile.release]
 opt-level = "z" # Оптимизация для размера
 lto = true # Включение Link Time Optimization
 codegen-units = 1 # Уменьшение количества единиц компиляции для лучшей оптимизации
 panic = "abort" # Уменьшение объема кода для обработки паник
 strip = true # Удаление символов отладки
+
+[dev-dependencies]
+tokio = { version = "1.24.2", features = ["net", "macros"] }
+tokio-test = "0.4.2"
+fastcgi-client = "0.8.0"
+indoc = "2.0.0"
+rand = "0.8.5"

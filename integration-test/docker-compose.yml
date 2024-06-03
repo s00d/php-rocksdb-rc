@@ -1,0 +1,31 @@
+version: '3.1'
+
+services:
+  php:
+    build: .
+    restart: always
+    networks:
+      - internal
+    privileged: true
+    volumes:
+      - ./:/var/www/html
+      # You may want to rename these files.
+      - ./module.ini:/usr/local/etc/php/conf.d/libphp_rocksdb_rc.ini
+      - ./module.so:/usr/local/lib/php/extensions/no-debug-non-zts-20210902/libphp_rocksdb_rc.so
+    ulimits:
+      core:
+        soft: -1
+        hard: -1
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    networks:
+      - internal
+    volumes:
+      - ./:/var/www/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+
+networks:
+  internal:
+    driver: bridge

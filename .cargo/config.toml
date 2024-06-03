@@ -6,3 +6,6 @@ linker = "rust-lld"
 
 [target.i686-pc-windows-msvc]
 linker = "rust-lld"
+
+[env]
+RUST_TEST_THREADS = "1"

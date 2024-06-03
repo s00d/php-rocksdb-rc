@@ -1,4 +1,4 @@
-mod iterator;
+
 mod backup;
 mod write_batch;
 mod snapshot;
@@ -7,19 +7,40 @@ mod transaction;
 use ext_php_rs::prelude::*;
 use rust_rocksdb::{Options, DB};
 use std::collections::HashMap;
-use std::sync::{Arc};
 use std::time::Duration;
+use ext_php_rs::convert::IntoZval;
+use ext_php_rs::types::{ZendHashTable, Zval};
+use ext_php_rs::error::Error;
 
-use crate::iterator::RocksDBIterator;
 use crate::backup::RocksDBBackup;
 use crate::write_batch::RocksDBWriteBatch;
 use crate::snapshot::RocksDBSnapshot;
 use crate::transaction::RocksDBTransaction;
 
 
+#[derive(Debug)]
+pub struct KeyValueResult {
+    pub key: Option<String>,
+    pub value: Option<String>,
+}
+
+impl IntoZval for KeyValueResult {
+    const TYPE: ext_php_rs::flags::DataType = ext_php_rs::flags::DataType::Array;
+
+    fn set_zval(self, zv: &mut Zval, _persistent: bool) -> Result<(), Error> {
+        let mut ht = ZendHashTable::new();
+        ht.insert("key", self.key.into_zval(false)?)?;
+        ht.insert("value", self.value.into_zval(false)?)?;
+        zv.set_hashtable(ht);
+        Ok(())
+    }
+}
+
+
 #[php_class]
 pub struct RocksDB {
-    db: Arc<DB>,
+    pub db: DB,
+    position: Option<Vec<u8>>,
 }
 
 #[php_impl]
@@ -41,9 +62,9 @@ impl RocksDB {
 
         match db {
             Ok(db) => {
-                let db_arc = Arc::new(db);
                 Ok(RocksDB {
-                    db: db_arc.clone(),
+                    db,
+                    position: None,
                 })
             }
             Err(e) => Err(e.to_string().into()),
@@ -218,6 +239,79 @@ impl RocksDB {
     pub fn keys(&self, cf_name: Option<String>) -> PhpResult<Vec<String>> {
         let all_data = self.all(cf_name)?;
         Ok(all_data.keys().cloned().collect())
+    }
+
+    // -- iterator
+    pub fn seek_to_first(&mut self) -> PhpResult<()> {
+        let mut iter = self.db.raw_iterator();
+        iter.seek_to_first();
+        self.position = iter.key().map(|k| k.to_vec());
+        Ok(())
+    }
+
+    pub fn seek_to_last(&mut self) -> PhpResult<()> {
+        let mut iter = self.db.raw_iterator();
+        iter.seek_to_last();
+        self.position = iter.key().map(|k| k.to_vec());
+        Ok(())
+    }
+
+    pub fn seek(&mut self, key: String) -> PhpResult<()> {
+        let mut iter = self.db.raw_iterator();
+        iter.seek(key.as_bytes());
+        self.position = iter.key().map(|k| k.to_vec());
+        Ok(())
+    }
+
+    pub fn seek_for_prev(&mut self, key: String) -> PhpResult<()> {
+        let mut iter = self.db.raw_iterator();
+        iter.seek_for_prev(key.as_bytes());
+        self.position = iter.key().map(|k| k.to_vec());
+        Ok(())
+    }
+
+    pub fn valid(&self) -> PhpResult<bool> {
+        let mut iter = self.db.raw_iterator();
+        if let Some(pos) = &self.position {
+            iter.seek(pos);
+        }
+        let valid = iter.valid();
+        Ok(valid)
+    }
+
+    pub fn next(&mut self) -> PhpResult<KeyValueResult> {
+        let mut iter = self.db.raw_iterator();
+        if let Some(pos) = &self.position {
+            iter.seek(pos);
+        }
+        if iter.valid() {
+            let key = iter.key().map(|k| String::from_utf8_lossy(k).to_string());
+            let value = iter.value().map(|v| String::from_utf8_lossy(v).to_string());
+            iter.next();
+            self.position = iter.key().map(|k| k.to_vec());
+            Ok(KeyValueResult { key, value })
+        } else {
+            self.position = None;
+            Ok(KeyValueResult { key: None, value: None })
+        }
+    }
+
+    pub fn prev(&mut self) -> PhpResult<KeyValueResult> {
+        let mut iter = self.db.raw_iterator();
+        if let Some(pos) = &self.position {
+            iter.seek(pos);
+        }
+
+        if iter.valid() {
+            let key = iter.key().map(|k| String::from_utf8_lossy(k).to_string());
+            let value = iter.value().map(|v| String::from_utf8_lossy(v).to_string());
+            iter.prev();
+            self.position = iter.key().map(|k| k.to_vec());
+            Ok(KeyValueResult { key, value })
+        } else {
+            self.position = None;
+            Ok(KeyValueResult { key: None, value: None })
+        }
     }
 }
 

@@ -81,13 +81,13 @@ To build the extension from source, you will need Rust and Cargo installed. Foll
 4. Add the following line to your `php.ini` file:
 
     ```ini
-    extension=php_rocksdb_rc.so
+    extension=libphp_rocksdb_rc.so
     ```
 
    or on macOS:
 
     ```ini
-    extension=php_rocksdb_rc.dylib
+    extension=libphp_rocksdb_rc.dylib
     ```
 
 5. Restart your web server or PHP-FPM to load the extension.
@@ -630,6 +630,21 @@ $db = null; // Free the connection
 $iterator = new \RocksDBIterator($dbPath); // Now you can create a new instance
 ?>
 ```
+
+## Enabling Autocompletion in PhpStorm
+
+To enable autocompletion for the `php_rocksdb_rc` extension in PhpStorm, follow these steps:
+
+1. **Download the Stub File**
+
+   Download the `.php_rocksdb_rc.php` file from [here](.php_rocksdb_rc.php).
+
+2. **Place the Stub File in Your Project**
+
+   Save the `.php_rocksdb_rc.php` file in your project directory
+
+After completing these steps, you should have autocompletion support for the `php_rocksdb_rc` extension in PhpStorm.
+
 
 ## Contributing
 
