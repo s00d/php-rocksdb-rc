@@ -131,12 +131,12 @@ jobs:
     strategy:
       matrix:
         include:
-          -
-            target: aarch64-apple-darwin
-            php-version: '8.0'
-          -
-            target: x86_64-apple-darwin
-            php-version: '8.0'
+#          -
+#            target: aarch64-apple-darwin
+#            php-version: '8.0'
+#          -
+#            target: x86_64-apple-darwin
+#            php-version: '8.0'
           -
             target: aarch64-apple-darwin
             php-version: '8.1'
