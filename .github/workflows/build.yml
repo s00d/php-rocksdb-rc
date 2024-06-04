@@ -179,10 +179,11 @@ jobs:
           override: true
       - name: Setup PHP version
         run: |
-          brew install shivammathur/php/php@${{ matrix.php-version }} && brew unlink php
-          echo 'export PATH="/opt/homebrew/opt/php@${{ matrix.php-version }}/bin:$PATH"' >> /Users/runner/.bash_profile
-          echo 'export PATH="/opt/homebrew/opt/php@${{ matrix.php-version }}/sbin:$PATH"' >> /Users/runner/.bash_profile
-          brew link --force php@${{ matrix.php-version }}
+          brew install shivammathur/php/php@${{ matrix.php-version }}
+          brew unlink php
+          echo 'export PATH="/opt/homebrew/opt/php@${{ matrix.php-version }}/bin:$PATH"' &gt;&gt; /Users/runner/.bash_profile
+          echo 'export PATH="/opt/homebrew/opt/php@${{ matrix.php-version }}/sbin:$PATH"' &gt;&gt; /Users/runner/.bash_profile
+          brew link --force --overwrite --dry-run php@${{ matrix.php-version }}
 
       - name: Build
         uses: actions-rs/cargo@v1
