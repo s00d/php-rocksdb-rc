@@ -18,7 +18,10 @@ pub fn setup() {
 }
 
 pub fn write_test_file(script_name: &str, code: &str) -> PathBuf {
-    let script_filename = env::current_dir().unwrap().join("tests/temp").join(script_name);
+    let script_filename = env::current_dir()
+        .unwrap()
+        .join("tests/temp")
+        .join(script_name);
     fs::write(script_filename.clone(), code).unwrap();
     script_filename
 }

@@ -1,5 +1,5 @@
 use ext_php_rs::prelude::*;
-use rust_rocksdb::{DB, Options, WriteBatchWithTransaction};
+use rust_rocksdb::{Options, WriteBatchWithTransaction, DB};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -13,7 +13,6 @@ pub struct RocksDBWriteBatch {
 impl RocksDBWriteBatch {
     #[constructor]
     pub fn __construct(path: String, ttl_secs: Option<u64>) -> PhpResult<Self> {
-
         let mut opts = Options::default();
         opts.create_if_missing(true);
         opts.set_max_open_files(1000);
@@ -42,12 +41,7 @@ impl RocksDBWriteBatch {
         Ok(())
     }
 
-    pub fn put(
-        &self,
-        key: String,
-        value: String,
-        cf_name: Option<String>,
-    ) -> PhpResult<()> {
+    pub fn put(&self, key: String, value: String, cf_name: Option<String>) -> PhpResult<()> {
         let mut batch = self.write_batch.lock().unwrap();
         if let Some(ref mut wb) = *batch {
             match cf_name {
@@ -68,12 +62,7 @@ impl RocksDBWriteBatch {
         Ok(())
     }
 
-    pub fn merge(
-        &self,
-        key: String,
-        value: String,
-        cf_name: Option<String>,
-    ) -> PhpResult<()> {
+    pub fn merge(&self, key: String, value: String, cf_name: Option<String>) -> PhpResult<()> {
         let mut batch = self.write_batch.lock().unwrap();
         if let Some(ref mut wb) = *batch {
             match cf_name {

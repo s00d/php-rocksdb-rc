@@ -1,8 +1,8 @@
 use ext_php_rs::prelude::*;
 use rust_rocksdb::backup::{BackupEngine, BackupEngineOptions, RestoreOptions};
-use rust_rocksdb::{DB, Env, Options};
-use std::sync::{Arc, Mutex};
+use rust_rocksdb::{Env, Options, DB};
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 #[php_class]
