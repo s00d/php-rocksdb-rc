@@ -171,7 +171,6 @@ jobs:
 #        uses: shivammathur/setup-php@v2
 #        with:
 #          php-version: ${{ matrix.php-version }}
-#          extensions: imagick, swoole
 #          tools: php-config
 #
 #      - name: Build
@@ -255,7 +254,6 @@ jobs:
 #        uses: shivammathur/setup-php@v2
 #        with:
 #          php-version: ${{ matrix.php-version }}
-#          extensions: imagick, swoole
 #          tools: php-config
 #
 #      - name: Build
@@ -328,14 +326,13 @@ jobs:
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           echo "C:\Users\runneradmin\.cargo\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
-          rustup default nightly
+          rustup default stable
           rustup target add ${{ matrix.target }}
 
       - name: Setup PHP with PECL extension
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
-          extensions: imagick, swoole
           tools: php-config
 
       - name: Build
