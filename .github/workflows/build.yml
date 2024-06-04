@@ -177,14 +177,12 @@ jobs:
           rustup default stable
           rustup target add ${{ matrix.target }}
 
-      - name: Setup PHP version
-        run: |
-          brew install shivammathur/php/php@${{ matrix.php-version }}
-          echo 'export PATH="/opt/homebrew/opt/php@${{ matrix.php-version }}/bin:$PATH"' >> /Users/runner/.bash_profile
-          echo 'export PATH="/opt/homebrew/opt/php@${{ matrix.php-version }}/sbin:$PATH"' >> /Users/runner/.bash_profile
-          source /Users/runner/.bash_profile
-          echo $PATH
-          brew link --force --overwrite --dry-run php@${{ matrix.php-version }}
+      - name: Setup PHP with PECL extension
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: imagick, swoole
+          tools: php-config
 
       - name: Build
         run: |
