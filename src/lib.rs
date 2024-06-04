@@ -1,22 +1,18 @@
-
 mod backup;
-mod write_batch;
-mod snapshot;
 mod transaction;
+mod write_batch;
 
+use ext_php_rs::convert::IntoZval;
+use ext_php_rs::error::Error;
 use ext_php_rs::prelude::*;
+use ext_php_rs::types::{ZendHashTable, Zval};
 use rust_rocksdb::{Options, DB};
 use std::collections::HashMap;
 use std::time::Duration;
-use ext_php_rs::convert::IntoZval;
-use ext_php_rs::types::{ZendHashTable, Zval};
-use ext_php_rs::error::Error;
 
 use crate::backup::RocksDBBackup;
-use crate::write_batch::RocksDBWriteBatch;
-use crate::snapshot::RocksDBSnapshot;
 use crate::transaction::RocksDBTransaction;
-
+use crate::write_batch::RocksDBWriteBatch;
 
 #[derive(Debug)]
 pub struct KeyValueResult {
@@ -35,7 +31,6 @@ impl IntoZval for KeyValueResult {
         Ok(())
     }
 }
-
 
 #[php_class]
 pub struct RocksDB {
@@ -61,12 +56,7 @@ impl RocksDB {
         };
 
         match db {
-            Ok(db) => {
-                Ok(RocksDB {
-                    db,
-                    position: None,
-                })
-            }
+            Ok(db) => Ok(RocksDB { db, position: None }),
             Err(e) => Err(e.to_string().into()),
         }
     }
@@ -292,7 +282,10 @@ impl RocksDB {
             Ok(KeyValueResult { key, value })
         } else {
             self.position = None;
-            Ok(KeyValueResult { key: None, value: None })
+            Ok(KeyValueResult {
+                key: None,
+                value: None,
+            })
         }
     }
 
@@ -310,7 +303,10 @@ impl RocksDB {
             Ok(KeyValueResult { key, value })
         } else {
             self.position = None;
-            Ok(KeyValueResult { key: None, value: None })
+            Ok(KeyValueResult {
+                key: None,
+                value: None,
+            })
         }
     }
 }

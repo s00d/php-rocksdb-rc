@@ -105,7 +105,6 @@ fn test_iterator() {
         $db = null; // Free the connection
     "#});
 
-
     assert_eq!(
         indoc! {r#"
             array(3) {
@@ -120,8 +119,6 @@ fn test_iterator() {
         output
     );
 }
-
-
 
 #[test]
 fn test_backup() {
@@ -170,44 +167,87 @@ fn test_write_batch() {
 }
 
 #[test]
-fn test_snapshot() {
+fn test_commit_transaction() {
     setup();
     let output = php_request(indoc! { r#"
         <?php
-        $dbPath = __DIR__ . "/temp/testdb";
-        $snapshot = new RocksDBSnapshot($dbPath, 3600); // 3600 seconds TTL
-        $snapshot->create();
-        $snapshot = null; // Free the connection
-        var_dump(true);
+        $dbPath = __DIR__ . "/temp/testdb_transaction";
+
+        // Test commit
+        $transaction = new RocksDBTransaction($dbPath);
+        $transaction->put("key1", "value1");
+        $transaction->commit();
+        $transaction = null; // Free the connection
+
+        $db = new RocksDBTransaction($dbPath);
+        $value = $db->get("key1");
+        var_dump($value); // Expecting value1
+        $db = null; // Free the connection
     "#});
+
     assert_eq!(
         indoc! {r#"
-            bool(true)
+            string(6) "value1"
         "#},
         output
     );
 }
 
 #[test]
-fn test_transaction() {
+fn test_rollback_transaction() {
     setup();
     let output = php_request(indoc! { r#"
         <?php
-        $dbPath = __DIR__ . "/temp/testdb";
-        $transaction = new RocksDBTransaction($dbPath, 3600); // 3600 seconds TTL
-        $transaction->start();
-        $transaction->put("key1", "value1");
+        $dbPath = __DIR__ . "/temp/testdb_transaction";
+
+        // Test rollback
+        $transaction = new RocksDBTransaction($dbPath);
+        $transaction->put("key2", "value2");
+        $transaction->rollback();
+        $transaction = null; // Free the connection
+
+        $db = new RocksDBTransaction($dbPath);
+        $value = $db->get("key2");
+        var_dump($value); // Expecting null
+        $db = null; // Free the connection
+    "#});
+
+    assert_eq!(
+        indoc! {r#"
+            NULL
+        "#},
+        output
+    );
+}
+
+#[test]
+fn test_savepoint_transaction() {
+    setup();
+    let output = php_request(indoc! { r#"
+        <?php
+        $dbPath = __DIR__ . "/temp/testdb_transaction";
+
+        // Test savepoint
+        $transaction = new RocksDBTransaction($dbPath);
+        $transaction->put("key3", "value3");
+        $transaction->setSavepoint();
+        $transaction->put("key4", "value4");
+        $transaction->rollbackToSavepoint();
         $transaction->commit();
         $transaction = null; // Free the connection
 
-        $db = new RocksDB($dbPath, 3600);
-        $value = $db->get("key1");
-        var_dump($value);
+        $db = new RocksDBTransaction($dbPath);
+        $value3 = $db->get("key3");
+        $value4 = $db->get("key4");
+        var_dump($value3); // Expecting value3
+        var_dump($value4); // Expecting null
         $db = null; // Free the connection
     "#});
+
     assert_eq!(
         indoc! {r#"
-            string(6) "value1"
+            string(6) "value3"
+            NULL
         "#},
         output
     );

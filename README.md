@@ -124,7 +124,7 @@ $value = $db->get("key2", "new_cf");
 echo $value; // Outputs: value2
 
 // List column families
-$column_families = $db->listColumnFamilies("/path/to/db");
+$column_families = RocksDB::listColumnFamilies("/path/to/db");
 print_r($column_families);
 
 // Drop a column family
@@ -140,6 +140,201 @@ RocksDB::repair("/path/to/db");
 $db->close();
 ?>
 ```
+
+This example demonstrates basic put and get operations in RocksDB.
+
+```php
+<?php
+$dbPath = __DIR__ . "/temp/testdb";
+$db = new RocksDB($dbPath, 3600); // 3600 seconds TTL
+$db->put("key1", "value1");
+$db = null; // Free the connection
+
+$db = new RocksDB($dbPath, 3600);
+$value = $db->get("key1");
+var_dump($value); // Outputs: string(6) "value1"
+$db = null; // Free the connection
+?>
+```
+
+### Example: Delete Operation
+
+This example demonstrates how to delete a key-value pair from RocksDB.
+
+```php
+<?php
+$dbPath = __DIR__ . "/temp/testdb";
+$db = new RocksDB($dbPath, 3600); // 3600 seconds TTL
+$db->put("key1", "value1");
+$db->delete("key1");
+$db = null; // Free the connection
+
+$db = new RocksDB($dbPath, 3600);
+$value = $db->get("key1");
+var_dump($value); // Outputs: NULL
+$db = null; // Free the connection
+?>
+```
+
+### Example: Iterator Usage
+
+This example demonstrates how to use an iterator to traverse key-value pairs in RocksDB.
+
+```php
+<?php
+$dbPath = __DIR__ . "/temp/testdb_iter";
+$db = new RocksDB($dbPath, 3600); // 3600 seconds TTL
+$db->flush();
+$db->put("key_vvv", "value_a");
+$db->put("key_ggg", "value_b");
+$db->put("key_hhh", "value_c");
+
+$db->seekToFirst();
+$result = [];
+while ($db->valid()) {
+    $res = $db->next();
+    $key = $res['key'];
+    $value = $res['value'];
+
+    $result[$key] = $value;
+}
+var_dump($result); // Outputs an array with all key-value pairs
+$db = null; // Free the connection
+?>
+```
+
+### Example: Backup and Restore
+
+This example demonstrates how to create a backup of the RocksDB database and retrieve information about the backups.
+
+```php
+<?php
+$dbPath = __DIR__ . "/temp/testdb_backup";
+$backupPath = __DIR__ . "/temp/testdb_backup_files";
+
+// Create and use RocksDB instance
+$db = new RocksDB($dbPath, 3600); // 3600 seconds TTL
+$db->put("key1", "value1");
+
+// Initialize backup engine and create a backup
+$backup = new \RocksDBBackup($dbPath, 3600); // 3600 seconds TTL
+$backup->init($backupPath);
+$backup->create();
+
+// Get backup info
+$info = $backup->info();
+print_r($info); // Outputs information about the backups
+
+// Restore from backup
+$restorePath = __DIR__ . "/temp/testdb_restore";
+$backup->restore(1, $restorePath); // Restore the first backup
+
+// Verify the restored data
+$restoredDb = new RocksDB($restorePath, 3600);
+$value = $restoredDb->get("key1");
+var_dump($value); // Outputs: string(6) "value1"
+
+// Cleanup
+$db = null;
+$restoredDb = null;
+?>
+```
+
+### Example: Write Batch Operations
+
+This example demonstrates how to use write batch operations to perform multiple writes in a single batch.
+
+```php
+<?php
+$dbPath = __DIR__ . "/temp/testdb_write_batch";
+$db = new RocksDB($dbPath, 3600); // 3600 seconds TTL
+
+// Initialize write batch
+$writeBatch = new \RocksDBWriteBatch($dbPath, 3600); // 3600 seconds TTL
+$writeBatch->start();
+$writeBatch->put("key1", "value1");
+$writeBatch->put("key2", "value2");
+$writeBatch->delete("key1");
+$writeBatch->write(); // Write the batch to the database
+
+// Verify the data
+$value1 = $db->get("key1");
+$value2 = $db->get("key2");
+var_dump($value1); // Outputs: NULL (since key1 was deleted)
+var_dump($value2); // Outputs: string(6) "value2"
+
+// Cleanup
+$db = null;
+?>
+```
+
+### Example: Transactions
+
+This example demonstrates how to use transactions to ensure atomicity of multiple operations.
+
+```php
+<?php
+$dbPath = __DIR__ . "/temp/testdb_transaction";
+$db = new RocksDB($dbPath, 3600); // 3600 seconds TTL
+
+// Initialize transaction
+$transaction = new \RocksDBTransaction($dbPath, 3600); // 3600 seconds TTL
+$transaction->start();
+$transaction->put("key1", "value1");
+$transaction->put("key2", "value2");
+$transaction->delete("key1");
+$transaction->commit(); // Commit the transaction
+
+// Verify the data
+$value1 = $db->get("key1");
+$value2 = $db->get("key2");
+var_dump($value1); // Outputs: NULL (since key1 was deleted)
+var_dump($value2); // Outputs: string(6) "value2"
+
+// Cleanup
+$db = null;
+?>
+```
+
+### Example: Snapshots
+
+This example demonstrates how to use snapshots to capture the state of the database at a specific point in time.
+
+```php
+<?php
+$dbPath = __DIR__ . "/temp/testdb_snapshot";
+$db = new RocksDB($dbPath, 3600); // 3600 seconds TTL
+
+// Put some initial data
+$db->put("key1", "value1");
+$db->put("key2", "value2");
+
+// Create a snapshot
+$snapshot = new \RocksDBSnapshot($dbPath, 3600); // 3600 seconds TTL
+$snapshot->create();
+
+// Modify the database after taking the snapshot
+$db->put("key1", "new_value1");
+$db->delete("key2");
+
+// Verify the data in the snapshot
+$snapshotValue1 = $snapshot->get("key1");
+$snapshotValue2 = $snapshot->get("key2");
+var_dump($snapshotValue1); // Outputs: string(6) "value1" (original value)
+var_dump($snapshotValue2); // Outputs: string(6) "value2" (original value)
+
+// Verify the current data in the database
+$currentValue1 = $db->get("key1");
+$currentValue2 = $db->get("key2");
+var_dump($currentValue1); // Outputs: string(10) "new_value1"
+var_dump($currentValue2); // Outputs: NULL (since key2 was deleted)
+
+// Cleanup
+$db = null;
+$snapshot = null;
+?>
+```
+
 
 ### Detailed API
 
@@ -293,54 +488,69 @@ print_r($keys);
 
 ### Iterator Methods
 
-#### `__construct(path: String, ttl_secs: Option<u64>)`
-Creates a new RocksDBIterator instance.
+#### `seekToFirst()`
+Seeks to the first key in the database or column family.
 
 ```php
 <?php
-$iterator = new \RocksDBIterator("/path/to/db", 3600); // 3600 seconds TTL
+$db->seekToFirst();
 ?>
 ```
 
-#### `iterator(cf_name: Option<String>)`
-Initializes an iterator for the database or column family.
+#### `seekToLast()`
+Seeks to the last key in the database or column family.
 
 ```php
 <?php
-$iterator = new \RocksDBIterator($dbPath);
-$iterator->iterator();
-while (true) {
-    $batch = $iterator->next(2);
-    if (empty($batch)) {
-        break;
-    }
-    print_r($batch);
-}
+$db->seekToLast();
 ?>
 ```
 
-#### `next(batch_size: usize)`
-Gets the next batch of key-value pairs from the iterator.
+#### `seek(key: String)`
+Seeks to the specified key in the database or column family.
 
 ```php
 <?php
-$iterator->iterator();
-while (true) {
-    $batch = $iterator->next(2);
-    if (empty($batch)) {
-        break;
-    }
-    print_r($batch);
-}
+$db->seek("key1");
 ?>
 ```
 
-#### `reset()`
-Resets the iterator.
+#### `seekForPrev(key: String)`
+Seeks to the specified key or previous key in the database or column family.
 
 ```php
 <?php
-$iterator->reset();
+$db->seekForPrev("key1");
+?>
+```
+
+#### `valid()`
+Checks if the current iterator position is valid.
+
+```php
+<?php
+$isValid = $db->valid();
+echo $isValid ? 'true' : 'false';
+?>
+```
+
+#### `next()`
+Moves to the next key-value pair in the database or column family.
+
+```php
+<?php
+$kv = $db->next();
+print_r($kv);
+?>
+```
+
+#### `prev()`
+Moves to the previous key-value pair in the database or column family.
+
+```php
+<?php
+$kv = $db->prev();
+print_r($kv);
 ?>
 ```
 
@@ -369,8 +579,6 @@ Creates a backup of the database.
 
 ```php
 <?php
-
-
 $backup->init("/path/to/backup");
 $backup->create();
 ?>
@@ -387,13 +595,13 @@ print_r($info);
 ?>
 ```
 
-#### `purge_old(num_backups_to_keep: usize)`
+#### `purgeOld(num_backups_to_keep: usize)`
 Purges old backups, keeping the specified number of backups.
 
 ```php
 <?php
 $backup->init("/path/to/backup");
-$backup->purge_old(2);
+$backup->purgeOld(2);
 ?>
 ```
 
@@ -487,35 +695,6 @@ Destroys the current write batch.
 <?php
 $write_batch->start();
 $write_batch->destroy();
-?>
-```
-
-### Snapshot Methods
-
-#### `__construct(path: String, ttl_secs: Option<u64>)`
-Creates a new RocksDBSnapshot instance.
-
-```php
-<?php
-$snapshot = new \RocksDBSnapshot("/path/to/db", 3600); // 3600 seconds TTL
-?>
-```
-
-#### `create()`
-Creates a snapshot of the current state of the database.
-
-```php
-<?php
-$snapshot->create();
-?>
-```
-
-#### `release()`
-Releases the current snapshot.
-
-```php
-<?php
-$snapshot->release();
 ?>
 ```
 
@@ -641,10 +820,9 @@ To enable autocompletion for the `php_rocksdb_rc` extension in PhpStorm, follow 
 
 2. **Place the Stub File in Your Project**
 
-   Save the `.php_rocksdb_rc.php` file in your project directory
+   Save the `.php_rocksdb_rc.php` file in your project directory.
 
 After completing these steps, you should have autocompletion support for the `php_rocksdb_rc` extension in PhpStorm.
-
 
 ## Contributing
 
@@ -659,3 +837,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 This project uses the following open-source libraries:
 - [ext-php-rs](https://github.com/davidcole1340/ext-php-rs)
 - [rust-rocksdb](https://github.com/rust-rocksdb/rust-rocksdb)
+
+## Conclusion
+
+The `php-rocksdb-rc` extension provides a powerful and efficient way to interact with RocksDB from PHP. With support for basic CRUD operations, column families, TTL, backups, write batches, transactions, and snapshots, it offers a comprehensive set of features for managing key-value data in PHP applications. The provided examples demonstrate how to use these features effectively. Happy coding!
