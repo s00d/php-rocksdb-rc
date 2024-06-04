@@ -51,6 +51,35 @@ You can download pre-built binaries from the [releases page](https://github.com/
 
 To build the extension from source, you will need Rust and Cargo installed. Follow the steps below:
 
+#### Install Rust and Cargo
+
+1. **On Linux and macOS**:
+
+   The recommended way to install Rust is via `rustup`, a toolchain installer for Rust.
+
+    ```sh
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    ```
+
+   Follow the on-screen instructions to complete the installation. After installation, you may need to restart your terminal or source your profile:
+
+    ```sh
+    source $HOME/.cargo/env
+    ```
+
+2. **On Windows**:
+
+   Download and run the `rustup-init.exe` installer from the [official Rust website](https://www.rust-lang.org/tools/install). Follow the on-screen instructions to complete the installation.
+
+   After installation, open a new command prompt or PowerShell window and ensure that `cargo` and `rustc` are in your PATH by running:
+
+    ```sh
+    rustc --version
+    cargo --version
+    ```
+
+#### Clone the Repository and Build the Extension
+
 1. Clone the repository:
 
     ```sh
@@ -66,31 +95,48 @@ To build the extension from source, you will need Rust and Cargo installed. Foll
 
 3. Copy the built library to your PHP extensions directory:
 
-   - On Linux:
+   - **On Linux**:
 
        ```sh
        cp target/release/libphp_rocksdb_rc.so /usr/lib/php/extensions/
        ```
 
-   - On macOS:
+   - **On macOS**:
 
        ```sh
        cp target/release/libphp_rocksdb_rc.dylib /usr/local/lib/php/extensions/
        ```
 
+   - **On Windows**:
+
+       ```sh
+       copy target\release\php_rocksdb_rc.dll C:\path\to\php\ext\
+       ```
+
 4. Add the following line to your `php.ini` file:
 
-    ```ini
-    extension=libphp_rocksdb_rc.so
-    ```
+   - **On Linux and macOS**:
 
-   or on macOS:
+       ```ini
+       extension=libphp_rocksdb_rc.so
+       ```
 
-    ```ini
-    extension=libphp_rocksdb_rc.dylib
-    ```
+   - **On Windows**:
+
+       ```ini
+       extension=php_rocksdb_rc.dll
+       ```
 
 5. Restart your web server or PHP-FPM to load the extension.
+
+### Additional Notes
+
+- Ensure that the path to the PHP extensions directory is correct. You can find the extension directory by running `php -i | grep extension_dir`.
+- If you encounter any issues during the installation of Rust, refer to the [official Rust installation guide](https://www.rust-lang.org/tools/install) for troubleshooting tips.
+- Make sure your PHP installation is compatible with the extension. You can check your PHP version by running `php -v`.
+
+By following these steps, you should be able to build and install the PHP extension from source successfully.
+
 
 ## Usage
 
