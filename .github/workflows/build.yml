@@ -347,6 +347,15 @@ jobs:
           name: php${{ matrix.php-version }}-${{ matrix.target }}
           path: target/php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.dll
 
+      - name: Get Cargo Version
+        id: cargo_version
+        run: |
+          $content = Get-Content -Path .\Cargo.toml
+          $versionLine = $content | Select-String -Pattern '^version =' | Select-Object -First 1
+          $version = $versionLine -replace 'version = "', '' -replace '"', ''
+          echo "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+        shell: pwsh
+
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2
