@@ -9,190 +9,98 @@ env:
   EXTENSION_NAME: php_rocksdb_rc
 
 jobs:
-  linux:
-    runs-on: ubuntu-latest
-    services:
-      registry:
-        image: registry:2
-        ports:
-          - 5000:5000
-    strategy:
-      matrix:
-        include:
-          -
-            target: x86_64-unknown-linux-gnu
-            platform: linux/amd64
-            php-version: '8.0'
-          -
-            os: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            platform: linux/arm64
-            php-version: '8.0'
-          -
-            target: x86_64-unknown-linux-gnu
-            platform: linux/amd64
-            php-version: '8.1'
-          -
-            os: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            platform: linux/arm64
-            php-version: '8.1'
-          -
-            target: x86_64-unknown-linux-gnu
-            platform: linux/amd64
-            php-version: '8.2'
-          -
-            os: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            platform: linux/arm64
-            php-version: '8.2'
-          -
-            target: x86_64-unknown-linux-gnu
-            platform: linux/amd64
-            php-version: '8.3'
-          -
-            os: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            platform: linux/arm64
-            php-version: '8.3'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ matrix.php-version }}-${{ matrix.target }}
-
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: network=host
-
-      - name: Setup docker
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: ${{ matrix.platform }}
-          push: true
-          tags: localhost:5000/php-build:latest
-          build-args: |
-            FROM_PHP=${{ matrix.php-version }}
-
-      - name: Build
-        run: |
-          docker run -v ~/.cargo/registry:/root/.cargo/registry -v ~/.cargo/git:/root/.cargo/git --platform ${{ matrix.platform }} --rm -v $PWD:/code localhost:5000/php-build:latest bash -c 'rustup target add ${{ matrix.target }} ; cargo build --release --target ${{ matrix.target }}'
-
-      - name: Rename file
-        run: cp target/${{ matrix.target }}/release/lib${{ env.EXTENSION_NAME }}.so php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.so
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: php${{ matrix.php-version }}-${{ matrix.target }}
-          path: php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.so
-
-      - name: Get Cargo Version
-        id: cargo_version
-        run: |
-          VERSION=$(grep '^version =' Cargo.toml | head -n 1 | sed 's/.*"\(.*\)".*/\1/')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.VERSION }}
-          name: Release ${{ env.VERSION }}
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload Release Asset
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.VERSION }}
-          files: |
-            php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.so
-
-#  macos:
-#    runs-on: macos-latest
+#  linux:
+#    runs-on: ubuntu-latest
+#    services:
+#      registry:
+#        image: registry:2
+#        ports:
+#          - 5000:5000
 #    strategy:
 #      matrix:
 #        include:
 #          -
-#            target: aarch64-apple-darwin
+#            target: x86_64-unknown-linux-gnu
+#            platform: linux/amd64
 #            php-version: '8.0'
 #          -
-#            target: x86_64-apple-darwin
+#            os: ubuntu-latest
+#            target: aarch64-unknown-linux-gnu
+#            platform: linux/arm64
 #            php-version: '8.0'
 #          -
-#            target: aarch64-apple-darwin
+#            target: x86_64-unknown-linux-gnu
+#            platform: linux/amd64
 #            php-version: '8.1'
 #          -
-#            target: x86_64-apple-darwin
+#            os: ubuntu-latest
+#            target: aarch64-unknown-linux-gnu
+#            platform: linux/arm64
 #            php-version: '8.1'
 #          -
-#            target: aarch64-apple-darwin
+#            target: x86_64-unknown-linux-gnu
+#            platform: linux/amd64
 #            php-version: '8.2'
 #          -
-#            target: x86_64-apple-darwin
+#            os: ubuntu-latest
+#            target: aarch64-unknown-linux-gnu
+#            platform: linux/arm64
 #            php-version: '8.2'
 #          -
-#            target: aarch64-apple-darwin
+#            target: x86_64-unknown-linux-gnu
+#            platform: linux/amd64
 #            php-version: '8.3'
 #          -
-#            target: x86_64-apple-darwin
+#            os: ubuntu-latest
+#            target: aarch64-unknown-linux-gnu
+#            platform: linux/arm64
 #            php-version: '8.3'
-#
 #    steps:
 #      - name: Checkout
-#        uses: actions/checkout@v2
+#        uses: actions/checkout@v4
 #        with:
 #          submodules: recursive
 #
-#      - uses: actions/cache@v2
+#      - uses: actions/cache@v4
 #        with:
 #          path: |
-#            ~/.cargo/registry
-#            ~/.cargo/git
-#            target
-#          key: ${{ matrix.php-version }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+#            ~/.cargo/bin/
+#            ~/.cargo/registry/index/
+#            ~/.cargo/registry/cache/
+#            ~/.cargo/git/db/
+#            target/
+#          key: ${{ matrix.php-version }}-${{ matrix.target }}
 #
-#      - name: Install latest rust toolchain
-#        uses: actions-rs/toolchain@v1
+#      - name: Setup QEMU
+#        uses: docker/setup-qemu-action@v3
+#
+#      - name: Set up Docker Buildx
+#        id: buildx
+#        uses: docker/setup-buildx-action@v3
 #        with:
-#          toolchain: stable
-#          target: ${{ matrix.target }}
-#          default: true
-#          override: true
-#      - name: Setup PHP version
-#        run: brew install php@${{ matrix.php-version }} && brew unlink php && brew link --force php@${{ matrix.php-version }}
+#          driver-opts: network=host
+#
+#      - name: Setup docker
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: .
+#          platforms: ${{ matrix.platform }}
+#          push: true
+#          tags: localhost:5000/php-build:latest
+#          build-args: |
+#            FROM_PHP=${{ matrix.php-version }}
+#
 #      - name: Build
-#        uses: actions-rs/cargo@v1
-#        with:
-#          use-cross: false
-#          command: build
-#          args: --release --target ${{ matrix.target }} --lib
+#        run: |
+#          docker run -v ~/.cargo/registry:/root/.cargo/registry -v ~/.cargo/git:/root/.cargo/git --platform ${{ matrix.platform }} --rm -v $PWD:/code localhost:5000/php-build:latest bash -c 'rustup target add ${{ matrix.target }} ; cargo build --release --target ${{ matrix.target }}'
 #
 #      - name: Rename file
-#        run: mv target/${{ matrix.target }}/release/lib${{ env.EXTENSION_NAME }}.dylib target/php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.dylib
+#        run: cp target/${{ matrix.target }}/release/lib${{ env.EXTENSION_NAME }}.so php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.so
 #
-#      - uses: actions/upload-artifact@v3
+#      - uses: actions/upload-artifact@v4
 #        with:
 #          name: php${{ matrix.php-version }}-${{ matrix.target }}
-#          path: target/php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.dylib
+#          path: php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.so
 #
 #      - name: Get Cargo Version
 #        id: cargo_version
@@ -216,4 +124,96 @@ jobs:
 #        with:
 #          tag_name: ${{ env.VERSION }}
 #          files: |
-#            target/php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.dylib
+#            php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.so
+
+  macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          -
+            target: aarch64-apple-darwin
+            php-version: '8.0'
+          -
+            target: x86_64-apple-darwin
+            php-version: '8.0'
+          -
+            target: aarch64-apple-darwin
+            php-version: '8.1'
+          -
+            target: x86_64-apple-darwin
+            php-version: '8.1'
+          -
+            target: aarch64-apple-darwin
+            php-version: '8.2'
+          -
+            target: x86_64-apple-darwin
+            php-version: '8.2'
+          -
+            target: aarch64-apple-darwin
+            php-version: '8.3'
+          -
+            target: x86_64-apple-darwin
+            php-version: '8.3'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ matrix.php-version }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install latest rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          default: true
+          override: true
+      - name: Setup PHP version
+        run: brew install php@${{ matrix.php-version }} && brew unlink php && brew link --force php@${{ matrix.php-version }}
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: false
+          command: build
+          args: --release --target ${{ matrix.target }} --lib
+
+      - name: Rename file
+        run: mv target/${{ matrix.target }}/release/lib${{ env.EXTENSION_NAME }}.dylib target/php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.dylib
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: php${{ matrix.php-version }}-${{ matrix.target }}
+          path: target/php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.dylib
+
+      - name: Get Cargo Version
+        id: cargo_version
+        run: |
+          VERSION=$(grep '^version =' Cargo.toml | head -n 1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: Release ${{ env.VERSION }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          files: |
+            target/php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.dylib
