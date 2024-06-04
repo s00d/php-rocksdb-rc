@@ -255,7 +255,7 @@ jobs:
       - name: Install latest Rust toolchain
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-          echo "::add-path::C:\Users\runneradmin\.cargo\bin"
+          echo "C:\Users\runneradmin\.cargo\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
           rustup default stable
           rustup target add ${{ matrix.target }}
 
