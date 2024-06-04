@@ -127,6 +127,90 @@ jobs:
 #            php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.so
 #
 #  macos:
+#    runs-on: macos-13
+#    strategy:
+#      matrix:
+#        include:
+#          -
+#            target: x86_64-apple-darwin
+#            php-version: '8.0'
+#          -
+#            target: x86_64-apple-darwin
+#            php-version: '8.1'
+#          -
+#            target: x86_64-apple-darwin
+#            php-version: '8.2'
+#          -
+#            target: x86_64-apple-darwin
+#            php-version: '8.3'
+#
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#        with:
+#          submodules: recursive
+#
+#      - uses: actions/cache@v2
+#        with:
+#          path: |
+#            ~/.cargo/bin/
+#            ~/.cargo/registry/index/
+#            ~/.cargo/registry/cache/
+#            ~/.cargo/git/db/
+#            target/
+#          key: ${{ matrix.php-version }}-${{ matrix.target }}
+#
+#      - name: Install latest Rust toolchain
+#        run: |
+#          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+#          source $HOME/.cargo/env
+#          rustup default stable
+#          rustup target add ${{ matrix.target }}
+#
+#      - name: Setup PHP with PECL extension
+#        uses: shivammathur/setup-php@v2
+#        with:
+#          php-version: ${{ matrix.php-version }}
+#          extensions: imagick, swoole
+#          tools: php-config
+#
+#      - name: Build
+#        run: |
+#          cargo build --release --target ${{ matrix.target }} --lib
+#
+#      - name: Rename file
+#        run: mv target/${{ matrix.target }}/release/lib${{ env.EXTENSION_NAME }}.dylib target/php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.dylib
+#
+#      - uses: actions/upload-artifact@v3
+#        with:
+#          name: php${{ matrix.php-version }}-${{ matrix.target }}
+#          path: target/php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.dylib
+#
+#      - name: Get Cargo Version
+#        id: cargo_version
+#        run: |
+#          VERSION=$(grep '^version =' Cargo.toml | head -n 1 | sed 's/.*"\(.*\)".*/\1/')
+#          echo "VERSION=$VERSION" >> $GITHUB_ENV
+#
+#      - name: Create GitHub Release
+#        id: create_release
+#        uses: softprops/action-gh-release@v2
+#        with:
+#          tag_name: ${{ env.VERSION }}
+#          name: Release ${{ env.VERSION }}
+#          draft: false
+#          prerelease: false
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#
+#      - name: Upload Release Asset
+#        uses: softprops/action-gh-release@v2
+#        with:
+#          tag_name: ${{ env.VERSION }}
+#          files: |
+#            target/php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.dylib
+#
+#  macos-arm:
 #    runs-on: macos-latest
 #    strategy:
 #      matrix:
@@ -135,25 +219,13 @@ jobs:
 #            target: aarch64-apple-darwin
 #            php-version: '8.0'
 #          -
-#            target: x86_64-apple-darwin
-#            php-version: '8.0'
-#          -
 #            target: aarch64-apple-darwin
-#            php-version: '8.1'
-#          -
-#            target: x86_64-apple-darwin
 #            php-version: '8.1'
 #          -
 #            target: aarch64-apple-darwin
 #            php-version: '8.2'
 #          -
-#            target: x86_64-apple-darwin
-#            php-version: '8.2'
-#          -
 #            target: aarch64-apple-darwin
-#            php-version: '8.3'
-#          -
-#            target: x86_64-apple-darwin
 #            php-version: '8.3'
 #
 #    steps:
@@ -256,7 +328,7 @@ jobs:
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           echo "C:\Users\runneradmin\.cargo\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
-          rustup default stable
+          rustup default nightly
           rustup target add ${{ matrix.target }}
 
       - name: Setup PHP with PECL extension
