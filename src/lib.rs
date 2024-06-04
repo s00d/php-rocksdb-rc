@@ -6,13 +6,41 @@ use ext_php_rs::convert::IntoZval;
 use ext_php_rs::error::Error;
 use ext_php_rs::prelude::*;
 use ext_php_rs::types::{ZendHashTable, Zval};
-use rust_rocksdb::{Options, DB};
+use json_patch::Patch;
+use rust_rocksdb::{
+    ColumnFamilyDescriptor, DBWithThreadMode, MergeOperands, Options, SingleThreaded, DB,
+};
+use serde_json::{from_value, Value};
 use std::collections::HashMap;
 use std::time::Duration;
 
 use crate::backup::RocksDBBackup;
 use crate::transaction::RocksDBTransaction;
 use crate::write_batch::RocksDBWriteBatch;
+
+fn json_merge(
+    _new_key: &[u8],
+    existing_val: Option<&[u8]>,
+    operands: &MergeOperands,
+) -> Option<Vec<u8>> {
+    // Decode the existing value
+    let mut doc: Value = if let Some(val) = existing_val {
+        serde_json::from_slice(val).unwrap_or(Value::Array(vec![]))
+    } else {
+        Value::Array(vec![])
+    };
+
+    // Process each operand
+    for op in operands {
+        if let Ok(patch) = serde_json::from_slice::<Value>(op) {
+            let p: Patch = from_value(patch).unwrap();
+            json_patch::patch(&mut doc, &p).unwrap();
+        }
+    }
+
+    // Serialize the updated JSON object back to bytes
+    Some(serde_json::to_vec(&doc).unwrap())
+}
 
 #[derive(Debug)]
 pub struct KeyValueResult {
@@ -34,7 +62,7 @@ impl IntoZval for KeyValueResult {
 
 #[php_class]
 pub struct RocksDB {
-    pub db: DB,
+    pub db: DBWithThreadMode<SingleThreaded>,
     position: Option<Vec<u8>>,
 }
 
@@ -46,13 +74,29 @@ impl RocksDB {
         opts.create_if_missing(true);
         opts.set_max_open_files(1000);
         opts.set_log_level(rust_rocksdb::LogLevel::Warn);
+        opts.set_merge_operator_associative("json_merge", json_merge);
+
+        let cf_names = DB::list_cf(&opts, &path).unwrap_or(vec!["default".to_string()]);
+        let cf_descriptors: Vec<ColumnFamilyDescriptor> = cf_names
+            .iter()
+            .map(|name| {
+                let mut cf_opts = Options::default();
+                cf_opts.set_merge_operator_associative("json_merge", json_merge);
+                ColumnFamilyDescriptor::new(name, cf_opts)
+            })
+            .collect();
 
         let db = match ttl_secs {
             Some(ttl) => {
                 let duration = Duration::from_secs(ttl);
-                DB::open_with_ttl(&opts, &path, duration)
+                DBWithThreadMode::open_cf_descriptors_with_ttl(
+                    &opts,
+                    &path,
+                    cf_descriptors,
+                    duration,
+                )
             }
-            None => DB::open(&opts, &path),
+            None => DBWithThreadMode::open_cf_descriptors(&opts, &path, cf_descriptors),
         };
 
         match db {
@@ -146,14 +190,15 @@ impl RocksDB {
         }
     }
 
-    pub fn create_column_family(&self, cf_name: String) -> PhpResult<()> {
-        let opts = Options::default();
+    pub fn create_column_family(&mut self, cf_name: String) -> PhpResult<()> {
+        let mut opts = Options::default();
+        opts.set_merge_operator_associative("json_merge", json_merge);
         self.db
             .create_cf(&cf_name, &opts)
             .map_err(|e| e.to_string().into())
     }
 
-    pub fn drop_column_family(&self, cf_name: String) -> PhpResult<()> {
+    pub fn drop_column_family(&mut self, cf_name: String) -> PhpResult<()> {
         self.db.drop_cf(&cf_name).map_err(|e| e.to_string().into())
     }
 

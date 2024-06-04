@@ -38,16 +38,21 @@ pub fn php_request(code: &str) -> String {
 }
 
 pub fn php_request_file(script_filename: &str) -> String {
-    let output = Command::new("php")
-        // .arg(format!(
-        //     "-dextension={}/target/debug/lib{}.{}",
-        //     env::current_dir().unwrap().to_str().unwrap(),
-        //     env!("CARGO_PKG_NAME"),
-        //     std::env::consts::DLL_EXTENSION,
-        // ))
-        .arg(script_filename)
-        .output()
-        .expect("failed to execute PHP script");
+    let mut command = Command::new("php");
+
+    // Check if the environment variable is set to disable the extension argument
+    if env::var("DISABLE_EXTENSION_ARG").is_err() {
+        command.arg(format!(
+            "-dextension={}/target/debug/lib{}.{}",
+            env::current_dir().unwrap().to_str().unwrap(),
+            env!("CARGO_PKG_NAME"),
+            std::env::consts::DLL_EXTENSION,
+        ));
+    }
+
+    command.arg(script_filename);
+
+    let output = command.output().expect("failed to execute PHP script");
 
     if output.status.success() {
         String::from_utf8(output.stdout).unwrap()

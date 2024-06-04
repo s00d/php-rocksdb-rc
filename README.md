@@ -371,15 +371,17 @@ echo $value; // Outputs: value2
 ```
 
 #### `merge(key: String, value: String, cf_name: Option<String>)`
-Merges a value into the database.
+Merges a value into the database using JSON Patch.
 
 ```php
 <?php
-$db->merge("json_obj_key", "{ employees: [ {first_name: john, last_name: doe}, {first_name: adam, last_name: smith}] }");
-$db->merge("json_obj_key", "employees[1].first_name = lucy");
-$db->merge("json_obj_key", "employees[0].last_name = dow");
+$db->merge("json_obj_key", '[ { "op": "replace", "path": "/employees/1/first_name", "value": "lucy" } ]');
+$db->merge("json_obj_key", '[ { "op": "replace", "path": "/employees/0/last_name", "value": "dow" } ]');
 ?>
 ```
+
+
+This method uses JSON Patch to update the JSON object in the database. For more details on JSON Patch, refer to  [RFC 6902](https://datatracker.ietf.org/doc/html/rfc6902).
 
 #### `delete(key: String, cf_name: Option<String>)`
 Deletes the key-value pair associated with the given key.
