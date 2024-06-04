@@ -847,7 +847,7 @@ $transaction->merge("json_obj_key", "employees[0].last_name = dow", "new_cf"); /
 
 ## Important Note
 
-Before creating a new instance of any class (e.g., `RocksDB`, `RocksDBIterator`, `RocksDBBackup`, `RocksDBWriteBatch`, `RocksDBSnapshot`, `RocksDBTransaction`), ensure to destroy the previous instance to free up the database connection.
+Before creating a new instance of any class (e.g., `RocksDB`, `RocksDBBackup`, `RocksDBWriteBatch`, `RocksDBTransaction`), ensure to destroy the previous instance to free up the database connection.
 
 ```php
 <?php

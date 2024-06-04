@@ -1,5 +1,3 @@
-#![cfg_attr(all(windows, target_arch = "x86_64"), feature(abi_vectorcall))]
-
 use ext_php_rs::prelude::*;
 use rust_rocksdb::{
     Options, Transaction, TransactionDB, TransactionDBOptions, TransactionOptions, WriteOptions,
