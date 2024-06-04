@@ -131,30 +131,30 @@ jobs:
     strategy:
       matrix:
         include:
+          -
+            target: aarch64-apple-darwin
+            php-version: '8.0'
+          -
+            target: x86_64-apple-darwin
+            php-version: '8.0'
 #          -
 #            target: aarch64-apple-darwin
-#            php-version: '8.0'
+#            php-version: '8.1'
 #          -
 #            target: x86_64-apple-darwin
-#            php-version: '8.0'
-          -
-            target: aarch64-apple-darwin
-            php-version: '8.1'
-          -
-            target: x86_64-apple-darwin
-            php-version: '8.1'
-          -
-            target: aarch64-apple-darwin
-            php-version: '8.2'
-          -
-            target: x86_64-apple-darwin
-            php-version: '8.2'
-          -
-            target: aarch64-apple-darwin
-            php-version: '8.3'
-          -
-            target: x86_64-apple-darwin
-            php-version: '8.3'
+#            php-version: '8.1'
+#          -
+#            target: aarch64-apple-darwin
+#            php-version: '8.2'
+#          -
+#            target: x86_64-apple-darwin
+#            php-version: '8.2'
+#          -
+#            target: aarch64-apple-darwin
+#            php-version: '8.3'
+#          -
+#            target: x86_64-apple-darwin
+#            php-version: '8.3'
 
     steps:
       - name: Checkout
@@ -178,7 +178,7 @@ jobs:
           default: true
           override: true
       - name: Setup PHP version
-        run: brew install php@${{ matrix.php-version }} && brew unlink php && brew link --force php@${{ matrix.php-version }}
+        run: brew install shivammathur/php/php@${{ matrix.php-version }} && brew unlink php && brew link --force php@${{ matrix.php-version }}
       - name: Build
         uses: actions-rs/cargo@v1
         with:
