@@ -326,7 +326,7 @@ jobs:
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           echo "C:\Users\runneradmin\.cargo\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
-          rustup default stable
+          rustup default nightly
           rustup target add ${{ matrix.target }}
 
       - name: Setup PHP with PECL extension

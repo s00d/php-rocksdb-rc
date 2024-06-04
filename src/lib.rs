@@ -1,3 +1,5 @@
+#![cfg_attr(all(windows, target_arch = "x86_64"), feature(abi_vectorcall))]
+
 mod backup;
 mod transaction;
 mod write_batch;
