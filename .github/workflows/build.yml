@@ -297,14 +297,14 @@ jobs:
     strategy:
       matrix:
         include:
+#          - target: x86_64-pc-windows-msvc
+#            php-version: '8.0'
           - target: x86_64-pc-windows-msvc
-            php-version: '8.0'
-#          - target: x86_64-pc-windows-msvc
-#            php-version: '8.1'
-#          - target: x86_64-pc-windows-msvc
-#            php-version: '8.2'
-#          - target: x86_64-pc-windows-msvc
-#            php-version: '8.3'
+            php-version: '8.1'
+          - target: x86_64-pc-windows-msvc
+            php-version: '8.2'
+          - target: x86_64-pc-windows-msvc
+            php-version: '8.3'
 
     steps:
       - name: Checkout
