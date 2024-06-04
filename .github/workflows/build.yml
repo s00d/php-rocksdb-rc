@@ -131,30 +131,30 @@ jobs:
     strategy:
       matrix:
         include:
+#          -
+#            target: aarch64-apple-darwin
+#            php-version: '8.0'
+#          -
+#            target: x86_64-apple-darwin
+#            php-version: '8.0'
           -
             target: aarch64-apple-darwin
-            php-version: '8.0'
+            php-version: '8.1'
           -
             target: x86_64-apple-darwin
-            php-version: '8.0'
-#          -
-#            target: aarch64-apple-darwin
-#            php-version: '8.1'
-#          -
-#            target: x86_64-apple-darwin
-#            php-version: '8.1'
-#          -
-#            target: aarch64-apple-darwin
-#            php-version: '8.2'
-#          -
-#            target: x86_64-apple-darwin
-#            php-version: '8.2'
-#          -
-#            target: aarch64-apple-darwin
-#            php-version: '8.3'
-#          -
-#            target: x86_64-apple-darwin
-#            php-version: '8.3'
+            php-version: '8.1'
+          -
+            target: aarch64-apple-darwin
+            php-version: '8.2'
+          -
+            target: x86_64-apple-darwin
+            php-version: '8.2'
+          -
+            target: aarch64-apple-darwin
+            php-version: '8.3'
+          -
+            target: x86_64-apple-darwin
+            php-version: '8.3'
 
     steps:
       - name: Checkout
@@ -165,9 +165,11 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
           key: ${{ matrix.php-version }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install latest Rust toolchain
