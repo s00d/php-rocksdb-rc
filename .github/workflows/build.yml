@@ -170,13 +170,13 @@ jobs:
             target
           key: ${{ matrix.php-version }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Install latest rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: ${{ matrix.target }}
-          default: true
-          override: true
+      - name: Install latest Rust toolchain
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          source $HOME/.cargo/env
+          rustup default stable
+          rustup target add ${{ matrix.target }}
+
       - name: Setup PHP version
         run: |
           brew install shivammathur/php/php@${{ matrix.php-version }}
@@ -187,11 +187,8 @@ jobs:
           brew link --force --overwrite --dry-run php@${{ matrix.php-version }}
 
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: false
-          command: build
-          args: --release --target ${{ matrix.target }} --lib
+        run: |
+          cargo build --release --target ${{ matrix.target }} --lib
 
       - name: Rename file
         run: mv target/${{ matrix.target }}/release/lib${{ env.EXTENSION_NAME }}.dylib target/php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.dylib
