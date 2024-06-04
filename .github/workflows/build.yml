@@ -347,12 +347,6 @@ jobs:
           name: php${{ matrix.php-version }}-${{ matrix.target }}
           path: target/php${{ matrix.php-version }}-${{ matrix.target }}-${{ env.EXTENSION_NAME }}.dll
 
-      - name: Get Cargo Version
-        id: cargo_version
-        run: |
-          VERSION=$(grep '^version =' Cargo.toml | head -n 1 | sed 's/.*"\(.*\)".*/\1/')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2
