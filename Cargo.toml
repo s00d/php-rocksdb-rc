@@ -25,8 +25,4 @@ panic = "abort" # Уменьшение объема кода для обрабо
 strip = true # Удаление символов отладки
 
 [dev-dependencies]
-tokio = { version = "1.24.2", features = ["net", "macros"] }
-tokio-test = "0.4.2"
-fastcgi-client = "0.8.0"
-indoc = "2.0.0"
 rand = "0.8.5"

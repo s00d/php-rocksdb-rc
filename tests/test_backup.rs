@@ -1,4 +1,3 @@
-use indoc::indoc;
 use std::thread::sleep;
 use std::time;
 
@@ -13,7 +12,8 @@ fn setup() {
 #[test]
 fn test_backup() {
     setup();
-    let output = php_request(indoc! { r#"
+    let output = php_request(
+        r#"
         <?php
         $dbPath = __DIR__ . "/temp/testdb_backup";
         $backupPath = __DIR__ . "/temp/backup1";
@@ -23,14 +23,16 @@ fn test_backup() {
         $info = $backup->info();
         var_dump($info);
         $backup = null; // Free the connection
-    "#});
+    "#,
+    );
     assert!(output.contains("backup_id"));
 }
 
 #[test]
 fn test_restore_backup() {
     setup();
-    let output = php_request(indoc! { r#"
+    let output = php_request(
+        r#"
         <?php
         $dbPath = __DIR__ . "/temp/backup2";
 
@@ -46,14 +48,12 @@ fn test_restore_backup() {
         $backup->restore(1, $restorePath);
         $db = new RocksDB($restorePath, 3600);
         $value = $db->get("key1");
-        var_dump($value);
+        echo $value;
         $backup = null; // Free the connection
         $db = null; // Free the connection
-    "#});
-    assert_eq!(
-        indoc! {r#"
-            string(6) "value1"
-        "#},
-        output
+    "#,
     );
+
+    // Проверяем, что значение "value1" было восстановлено
+    assert_eq!(output.trim(), "value1");
 }

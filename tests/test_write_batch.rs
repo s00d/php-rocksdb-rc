@@ -1,4 +1,3 @@
-use indoc::indoc;
 use std::thread::sleep;
 use std::time;
 
@@ -13,7 +12,8 @@ fn setup() {
 #[test]
 fn test_write_batch() {
     setup();
-    let output = php_request(indoc! { r#"
+    let output = php_request(
+        r#"
         <?php
         $dbPath = __DIR__ . "/temp/testdb_write_batch";
         $write_batch = new RocksDBWriteBatch($dbPath, 3600); // 3600 seconds TTL
@@ -26,15 +26,10 @@ fn test_write_batch() {
         $db = new RocksDB($dbPath, 3600);
         $value1 = $db->get("key1");
         $value2 = $db->get("key2");
-        var_dump($value1);
-        var_dump($value2);
+        echo $value1 . "\n" . $value2;
         $db = null; // Free the connection
-    "#});
-    assert_eq!(
-        indoc! {r#"
-            string(6) "value1"
-            string(6) "value2"
-        "#},
-        output
+    "#,
     );
+    let expected_output = "value1\nvalue2";
+    assert_eq!(output.trim(), expected_output);
 }

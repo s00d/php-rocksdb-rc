@@ -368,33 +368,52 @@ impl RocksDB {
         }
     }
 
-    pub fn compact_range(&self, start: Option<String>, end: Option<String>, cf_name: Option<String>) -> PhpResult<()> {
+    pub fn compact_range(
+        &self,
+        start: Option<String>,
+        end: Option<String>,
+        cf_name: Option<String>,
+    ) -> PhpResult<()> {
         match cf_name {
             Some(cf_name) => {
                 let cf = self
                     .db
                     .cf_handle(&cf_name)
                     .ok_or("Column family not found")?;
-                self.db
-                    .compact_range_cf(&cf, start.as_ref().map(|s| s.as_bytes()), end.as_ref().map(|s| s.as_bytes()));
+                self.db.compact_range_cf(
+                    &cf,
+                    start.as_ref().map(|s| s.as_bytes()),
+                    end.as_ref().map(|s| s.as_bytes()),
+                );
             }
             None => {
-                self.db
-                    .compact_range(start.as_ref().map(|s| s.as_bytes()), end.as_ref().map(|s| s.as_bytes()));
+                self.db.compact_range(
+                    start.as_ref().map(|s| s.as_bytes()),
+                    end.as_ref().map(|s| s.as_bytes()),
+                );
             }
         }
         Ok(())
     }
 
-
     pub fn get_live_files(&self) -> PhpResult<Vec<String>> {
-        let live_files = self.db.live_files().map_err(|e| PhpException::from(e.to_string()))?;
+        let live_files = self
+            .db
+            .live_files()
+            .map_err(|e| PhpException::from(e.to_string()))?;
         let live_file_names = live_files.iter().map(|lf| lf.name.clone()).collect();
         Ok(live_file_names)
     }
 
-    pub fn set_options(&self, options: HashMap<String, String>, cf_name: Option<String>) -> PhpResult<()> {
-        let options_vec: Vec<(&str, &str)> = options.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
+    pub fn set_options(
+        &self,
+        options: HashMap<String, String>,
+        cf_name: Option<String>,
+    ) -> PhpResult<()> {
+        let options_vec: Vec<(&str, &str)> = options
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect();
         match cf_name {
             Some(cf_name) => {
                 let cf = self
@@ -410,7 +429,11 @@ impl RocksDB {
         Ok(())
     }
 
-    pub fn set_compression(&self, compression_type: String, cf_name: Option<String>) -> PhpResult<()> {
+    pub fn set_compression(
+        &self,
+        compression_type: String,
+        cf_name: Option<String>,
+    ) -> PhpResult<()> {
         let compression = match compression_type.as_str() {
             "none" => rust_rocksdb::DBCompressionType::None,
             "snappy" => rust_rocksdb::DBCompressionType::Snappy,
@@ -425,11 +448,18 @@ impl RocksDB {
         opts.set_compression_type(compression);
         match cf_name {
             Some(cf_name) => {
-                let cf = self.db.cf_handle(&cf_name).ok_or("Column family not found")?;
-                self.db.set_options_cf(cf, &[("compression", compression_type.as_str())])
+                let cf = self
+                    .db
+                    .cf_handle(&cf_name)
+                    .ok_or("Column family not found")?;
+                self.db
+                    .set_options_cf(cf, &[("compression", compression_type.as_str())])
             }
-            None => self.db.set_options(&[("compression", compression_type.as_str())]),
-        }.map_err(|e| e.to_string().into())
+            None => self
+                .db
+                .set_options(&[("compression", compression_type.as_str())]),
+        }
+        .map_err(|e| e.to_string().into())
     }
 
     pub fn set_write_buffer_size(&self, size: usize, cf_name: Option<String>) -> PhpResult<()> {
@@ -437,11 +467,18 @@ impl RocksDB {
         opts.set_write_buffer_size(size);
         match cf_name {
             Some(cf_name) => {
-                let cf = self.db.cf_handle(&cf_name).ok_or("Column family not found")?;
-                self.db.set_options_cf(cf, &[("write_buffer_size", size.to_string().as_str())])
+                let cf = self
+                    .db
+                    .cf_handle(&cf_name)
+                    .ok_or("Column family not found")?;
+                self.db
+                    .set_options_cf(cf, &[("write_buffer_size", size.to_string().as_str())])
             }
-            None => self.db.set_options(&[("write_buffer_size", size.to_string().as_str())]),
-        }.map_err(|e| e.to_string().into())
+            None => self
+                .db
+                .set_options(&[("write_buffer_size", size.to_string().as_str())]),
+        }
+        .map_err(|e| e.to_string().into())
     }
 
     pub fn set_cache_size(&self, size: usize, cf_name: Option<String>) -> PhpResult<()> {
@@ -451,11 +488,18 @@ impl RocksDB {
         opts.set_block_based_table_factory(&cache);
         match cf_name {
             Some(cf_name) => {
-                let cf = self.db.cf_handle(&cf_name).ok_or("Column family not found")?;
-                self.db.set_options_cf(cf, &[("block_cache", size.to_string().as_str())])
+                let cf = self
+                    .db
+                    .cf_handle(&cf_name)
+                    .ok_or("Column family not found")?;
+                self.db
+                    .set_options_cf(cf, &[("block_cache", size.to_string().as_str())])
             }
-            None => self.db.set_options(&[("block_cache", size.to_string().as_str())]),
-        }.map_err(|e| e.to_string().into())
+            None => self
+                .db
+                .set_options(&[("block_cache", size.to_string().as_str())]),
+        }
+        .map_err(|e| e.to_string().into())
     }
 }
 

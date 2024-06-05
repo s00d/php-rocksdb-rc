@@ -1,4 +1,3 @@
-use indoc::indoc;
 use std::thread::sleep;
 use std::time;
 
@@ -13,7 +12,8 @@ fn setup() {
 #[test]
 fn test_create_column_family() {
     setup();
-    let output = php_request(indoc! { r#"
+    let output = php_request(
+        r#"
         <?php
         $dbPath = __DIR__ . "/temp/testdb_cf";
         $db = new RocksDB($dbPath, 3600); // 3600 seconds TTL
@@ -22,14 +22,16 @@ fn test_create_column_family() {
         var_dump($cfs);
         $db->dropColumnFamily("new_cf");
         $db = null; // Free the connection
-    "#});
+    "#,
+    );
     assert!(output.contains("new_cf"));
 }
 
 #[test]
 fn test_drop_column_family() {
     setup();
-    let output = php_request(indoc! { r#"
+    let output = php_request(
+        r#"
         <?php
         $dbPath = __DIR__ . "/temp/testdb_drop_cf";
         $db = new RocksDB($dbPath, 3600); // 3600 seconds TTL
@@ -38,14 +40,16 @@ fn test_drop_column_family() {
         $cfs = $db->listColumnFamilies($dbPath);
         var_dump($cfs);
         $db = null; // Free the connection
-    "#});
+    "#,
+    );
     assert!(!output.contains("new_cf_drop"));
 }
 
 #[test]
 fn test_list_column_families() {
     setup();
-    let output = php_request(indoc! { r#"
+    let output = php_request(
+        r#"
         <?php
         $dbPath = __DIR__ . "/temp/testdb_list_cf";
         $db = new RocksDB($dbPath, 3600); // 3600 seconds TTL
@@ -54,7 +58,8 @@ fn test_list_column_families() {
         $cfs = $db->listColumnFamilies($dbPath);
         var_dump($cfs);
         $db = null; // Free the connection
-    "#});
+    "#,
+    );
     assert!(output.contains("cf1"));
     assert!(output.contains("cf2"));
 }

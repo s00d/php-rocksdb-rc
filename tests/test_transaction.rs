@@ -1,4 +1,3 @@
-use indoc::indoc;
 use std::thread::sleep;
 use std::time;
 
@@ -13,7 +12,8 @@ fn setup() {
 #[test]
 fn test_commit_transaction() {
     setup();
-    let output = php_request(indoc! { r#"
+    let output = php_request(
+        r#"
         <?php
         $dbPath = __DIR__ . "/temp/testdb_transaction";
 
@@ -25,22 +25,19 @@ fn test_commit_transaction() {
 
         $db = new RocksDBTransaction($dbPath);
         $value = $db->get("key1");
-        var_dump($value); // Expecting value1
+        echo $value; // Expecting value1
         $db = null; // Free the connection
-    "#});
-
-    assert_eq!(
-        indoc! {r#"
-            string(6) "value1"
-        "#},
-        output
+    "#,
     );
+
+    assert_eq!(output.trim(), "value1");
 }
 
 #[test]
 fn test_rollback_transaction() {
     setup();
-    let output = php_request(indoc! { r#"
+    let output = php_request(
+        r#"
         <?php
         $dbPath = __DIR__ . "/temp/testdb_transaction";
 
@@ -52,22 +49,19 @@ fn test_rollback_transaction() {
 
         $db = new RocksDBTransaction($dbPath);
         $value = $db->get("key2");
-        var_dump($value); // Expecting null
+        echo $value ? $value : 'NULL'; // Expecting null
         $db = null; // Free the connection
-    "#});
-
-    assert_eq!(
-        indoc! {r#"
-            NULL
-        "#},
-        output
+    "#,
     );
+
+    assert_eq!(output.trim(), "NULL");
 }
 
 #[test]
 fn test_savepoint_transaction() {
     setup();
-    let output = php_request(indoc! { r#"
+    let output = php_request(
+        r#"
         <?php
         $dbPath = __DIR__ . "/temp/testdb_transaction";
 
@@ -83,16 +77,11 @@ fn test_savepoint_transaction() {
         $db = new RocksDBTransaction($dbPath);
         $value3 = $db->get("key3");
         $value4 = $db->get("key4");
-        var_dump($value3); // Expecting value3
-        var_dump($value4); // Expecting null
+        echo $value3 . "\n" . ($value4 ? $value4 : 'NULL'); // Expecting value3 and null
         $db = null; // Free the connection
-    "#});
-
-    assert_eq!(
-        indoc! {r#"
-            string(6) "value3"
-            NULL
-        "#},
-        output
+    "#,
     );
+
+    let expected_output = "value3\nNULL";
+    assert_eq!(output.trim(), expected_output);
 }

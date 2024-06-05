@@ -1,4 +1,3 @@
-use indoc::indoc;
 use std::thread::sleep;
 use std::time;
 
@@ -13,7 +12,8 @@ fn setup() {
 #[test]
 fn test_iterator() {
     setup();
-    let output = php_request(indoc! { r#"
+    let output = php_request(
+        r#"
         <?php
         $dbPath = __DIR__ . "/temp/testdb_iter";
         $db = new RocksDB($dbPath, 3600); // 3600 seconds TTL
@@ -31,29 +31,22 @@ fn test_iterator() {
 
             $result[$key] = $value;
         }
-        var_dump($result);
+        echo json_encode($result);
         $db = null; // Free the connection
-    "#});
+    "#,
+    );
 
     assert_eq!(
-        indoc! {r#"
-            array(3) {
-              ["key_ggg"]=>
-              string(7) "value_b"
-              ["key_hhh"]=>
-              string(7) "value_c"
-              ["key_vvv"]=>
-              string(7) "value_a"
-            }
-        "#},
-        output
+        output.trim(),
+        r#"{"key_ggg":"value_b","key_hhh":"value_c","key_vvv":"value_a"}"#
     );
 }
 
 #[test]
 fn test_seek_to_last() {
     setup();
-    let output = php_request(indoc! { r#"
+    let output = php_request(
+        r#"
         <?php
         $dbPath = __DIR__ . "/temp/testdb_seek_last";
         $db = new RocksDB($dbPath, 3600); // 3600 seconds TTL
@@ -63,27 +56,18 @@ fn test_seek_to_last() {
 
         $db->seekToLast();
         $res = $db->prev();
-        var_dump($res);
-
+        echo json_encode($res);
         $db = null; // Free the connection
-    "#});
-    assert_eq!(
-        indoc! {r#"
-            array(2) {
-              ["key"]=>
-              string(4) "key3"
-              ["value"]=>
-              string(6) "value3"
-            }
-        "#},
-        output
+    "#,
     );
+    assert_eq!(output.trim(), r#"{"key":"key3","value":"value3"}"#);
 }
 
 #[test]
 fn test_seek() {
     setup();
-    let output = php_request(indoc! { r#"
+    let output = php_request(
+        r#"
         <?php
         $dbPath = __DIR__ . "/temp/testdb_seek";
         $db = new RocksDB($dbPath, 3600); // 3600 seconds TTL
@@ -93,27 +77,18 @@ fn test_seek() {
 
         $db->seek("key2");
         $res = $db->next();
-        var_dump($res);
-
+        echo json_encode($res);
         $db = null; // Free the connection
-    "#});
-    assert_eq!(
-        indoc! {r#"
-            array(2) {
-              ["key"]=>
-              string(4) "key2"
-              ["value"]=>
-              string(6) "value2"
-            }
-        "#},
-        output
+    "#,
     );
+    assert_eq!(output.trim(), r#"{"key":"key2","value":"value2"}"#);
 }
 
 #[test]
 fn test_valid() {
     setup();
-    let output = php_request(indoc! { r#"
+    let output = php_request(
+        r#"
         <?php
         $dbPath = __DIR__ . "/temp/testdb_valid";
         $db = new RocksDB($dbPath, 3600); // 3600 seconds TTL
@@ -123,14 +98,9 @@ fn test_valid() {
 
         $db->seekToFirst();
         $isValid = $db->valid();
-        var_dump($isValid);
-
+        echo $isValid ? 'true' : 'false';
         $db = null; // Free the connection
-    "#});
-    assert_eq!(
-        indoc! {r#"
-            bool(true)
-        "#},
-        output
+    "#,
     );
+    assert_eq!(output.trim(), "true");
 }
