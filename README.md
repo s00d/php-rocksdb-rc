@@ -602,6 +602,76 @@ print_r($kv);
 ?>
 ```
 
+#### `compact_range(start: Option<String>, end: Option<String>, cf_name: Option<String>)`
+Compacts the key-value pairs in the specified range within the database or column family.
+
+```php
+<?php
+$db->compact_range("key_start", "key_end");
+$db->compact_range("key_start", "key_end", "new_cf"); // In column family
+?>
+```
+
+#### `get_live_files()`
+Returns the names of the live SST files in the database.
+
+```php
+<?php
+$live_files = $db->get_live_files();
+print_r($live_files);
+?>
+```
+
+#### `set_options(options: HashMap<String, String>, cf_name: Option<String>)`
+Sets the database options.
+
+```php
+<?php
+$options = [
+    "write_buffer_size" => "4194304",
+    "max_write_buffer_number" => "3",
+];
+$db->set_options($options);
+$db->set_options($options, "new_cf"); // For column family
+?>
+```
+
+#### `set_compression(compression_type: String, cf_name: Option<String>)`
+Sets the compression type for the database or column family.
+
+```php
+<?php
+$db->set_compression("snappy");
+$db->set_compression("zlib", "new_cf"); // For column family
+?>
+```
+
+This method supports the following compression types: "none", "snappy", "zlib", "bzip2", "lz4", "lz4hc", "zstd".
+
+#### `set_write_buffer_size(size: usize, cf_name: Option<String>)`
+Sets the size of the write buffer for the database or column family.
+
+```php
+<?php
+$db->set_write_buffer_size(4194304);
+$db->set_write_buffer_size(4194304, "new_cf"); // For column family
+?>
+```
+
+This method sets the amount of data to build up in memory (backed by an unsorted log on disk) before converting to a sorted on-disk file.
+
+#### `set_cache_size(size: usize, cf_name: Option<String>)`
+Sets the size of the block cache for the database or column family.
+
+```php
+<?php
+$db->set_cache_size(8388608);
+$db->set_cache_size(8388608, "new_cf"); // For column family
+?>
+```
+
+This method sets the amount of memory to use for the block cache, which is used to accelerate the read operations by caching the data blocks in memory.
+
 ### Backup Methods
 
 #### `__construct(path: String, ttl_secs: Option<u64>)`
