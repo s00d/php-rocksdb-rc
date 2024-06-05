@@ -44,7 +44,7 @@ jobs:
 
       - name: Run Tests
         run: |
-          cargo test --target ${{ matrix.target }}
+          cargo test --target x86_64-unknown-linux-gnu
 
   linux:
     runs-on: ubuntu-latest
