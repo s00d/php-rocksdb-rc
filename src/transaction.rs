@@ -1,9 +1,9 @@
+use crate::RocksDBException;
 use ext_php_rs::prelude::*;
 use rust_rocksdb::{
     Options, Transaction, TransactionDB, TransactionDBOptions, TransactionOptions, WriteOptions,
 };
 use std::sync::{Arc, Mutex};
-use crate::RocksDBException;
 
 #[php_class]
 pub struct RocksDBTransaction {
@@ -31,8 +31,9 @@ impl RocksDBTransaction {
         opts.set_max_open_files(1000);
         opts.set_log_level(rust_rocksdb::LogLevel::Warn);
 
-        let transaction_db = TransactionDB::open(&opts, &txn_db_opts, &path)
-            .map_err(|e| ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string()))?;
+        let transaction_db = TransactionDB::open(&opts, &txn_db_opts, &path).map_err(|e| {
+            ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string())
+        })?;
 
         let transaction_db = Arc::new(transaction_db);
         let transaction = create_transaction(&transaction_db);
@@ -58,8 +59,9 @@ impl RocksDBTransaction {
     pub fn commit(&self) -> PhpResult<()> {
         let mut txn_guard = self.transaction.lock().unwrap();
         if let Some(txn) = txn_guard.take() {
-            txn.commit()
-                .map_err(|e| ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string()))?;
+            txn.commit().map_err(|e| {
+                ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string())
+            })?;
         }
         *txn_guard = Some(create_transaction(&self.transaction_db));
         Ok(())
@@ -68,8 +70,9 @@ impl RocksDBTransaction {
     pub fn rollback(&self) -> PhpResult<()> {
         let mut txn_guard = self.transaction.lock().unwrap();
         if let Some(txn) = txn_guard.take() {
-            txn.rollback()
-                .map_err(|e| ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string()))?;
+            txn.rollback().map_err(|e| {
+                ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string())
+            })?;
         }
         *txn_guard = Some(create_transaction(&self.transaction_db));
         Ok(())
@@ -86,8 +89,9 @@ impl RocksDBTransaction {
     pub fn rollback_to_savepoint(&self) -> PhpResult<()> {
         let txn_guard = self.transaction.lock().unwrap();
         if let Some(ref txn) = *txn_guard {
-            txn.rollback_to_savepoint()
-                .map_err(|e| ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string()))?;
+            txn.rollback_to_savepoint().map_err(|e| {
+                ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string())
+            })?;
         }
         Ok(())
     }
@@ -102,16 +106,22 @@ impl RocksDBTransaction {
                         .cf_handle(&cf_name)
                         .ok_or("Column family not found")?;
                     txn.put_cf(&cf, key.as_bytes(), value.as_bytes())
-                        .map_err(|e| ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string()))
+                        .map_err(|e| {
+                            ext_php_rs::exception::PhpException::from_class::<RocksDBException>(
+                                e.to_string(),
+                            )
+                        })
                 }
-                None => txn
-                    .put(key.as_bytes(), value.as_bytes())
-                    .map_err(|e| ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string())),
+                None => txn.put(key.as_bytes(), value.as_bytes()).map_err(|e| {
+                    ext_php_rs::exception::PhpException::from_class::<RocksDBException>(
+                        e.to_string(),
+                    )
+                }),
             }
         } else {
-            Err(ext_php_rs::exception::PhpException::from_class::<RocksDBException>(
-                "No active transaction".to_string(),
-            ))
+            Err(ext_php_rs::exception::PhpException::from_class::<
+                RocksDBException,
+            >("No active transaction".to_string()))
         }
     }
 
@@ -126,26 +136,32 @@ impl RocksDBTransaction {
                         .ok_or("Column family not found")?;
                     match txn.get_cf(&cf, key.as_bytes()) {
                         Ok(Some(value)) => Ok(Some(String::from_utf8(value).map_err(|e| {
-                            ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string())
+                            ext_php_rs::exception::PhpException::from_class::<RocksDBException>(
+                                e.to_string(),
+                            )
                         })?)),
                         Ok(None) => Ok(None),
-                        Err(e) => Err(ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string())),
+                        Err(e) => Err(ext_php_rs::exception::PhpException::from_class::<
+                            RocksDBException,
+                        >(e.to_string())),
                     }
                 }
-                None => {
-                    match txn.get(key.as_bytes()) {
-                        Ok(Some(value)) => Ok(Some(String::from_utf8(value).map_err(|e| {
-                            ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string())
-                        })?)),
-                        Ok(None) => Ok(None),
-                        Err(e) => Err(ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string())),
-                    }
-                }
+                None => match txn.get(key.as_bytes()) {
+                    Ok(Some(value)) => Ok(Some(String::from_utf8(value).map_err(|e| {
+                        ext_php_rs::exception::PhpException::from_class::<RocksDBException>(
+                            e.to_string(),
+                        )
+                    })?)),
+                    Ok(None) => Ok(None),
+                    Err(e) => Err(ext_php_rs::exception::PhpException::from_class::<
+                        RocksDBException,
+                    >(e.to_string())),
+                },
             }
         } else {
-            Err(ext_php_rs::exception::PhpException::from_class::<RocksDBException>(
-                "No active transaction".to_string(),
-            ))
+            Err(ext_php_rs::exception::PhpException::from_class::<
+                RocksDBException,
+            >("No active transaction".to_string()))
         }
     }
 
@@ -158,17 +174,22 @@ impl RocksDBTransaction {
                         .transaction_db
                         .cf_handle(&cf_name)
                         .ok_or("Column family not found")?;
-                    txn.delete_cf(&cf, key.as_bytes())
-                        .map_err(|e| ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string()))
+                    txn.delete_cf(&cf, key.as_bytes()).map_err(|e| {
+                        ext_php_rs::exception::PhpException::from_class::<RocksDBException>(
+                            e.to_string(),
+                        )
+                    })
                 }
-                None => txn
-                    .delete(key.as_bytes())
-                    .map_err(|e| ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string())),
+                None => txn.delete(key.as_bytes()).map_err(|e| {
+                    ext_php_rs::exception::PhpException::from_class::<RocksDBException>(
+                        e.to_string(),
+                    )
+                }),
             }
         } else {
-            Err(ext_php_rs::exception::PhpException::from_class::<RocksDBException>(
-                "No active transaction".to_string(),
-            ))
+            Err(ext_php_rs::exception::PhpException::from_class::<
+                RocksDBException,
+            >("No active transaction".to_string()))
         }
     }
 
@@ -182,16 +203,22 @@ impl RocksDBTransaction {
                         .cf_handle(&cf_name)
                         .ok_or("Column family not found")?;
                     txn.merge_cf(&cf, key.as_bytes(), value.as_bytes())
-                        .map_err(|e| ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string()))
+                        .map_err(|e| {
+                            ext_php_rs::exception::PhpException::from_class::<RocksDBException>(
+                                e.to_string(),
+                            )
+                        })
                 }
-                None => txn
-                    .merge(key.as_bytes(), value.as_bytes())
-                    .map_err(|e| ext_php_rs::exception::PhpException::from_class::<RocksDBException>(e.to_string())),
+                None => txn.merge(key.as_bytes(), value.as_bytes()).map_err(|e| {
+                    ext_php_rs::exception::PhpException::from_class::<RocksDBException>(
+                        e.to_string(),
+                    )
+                }),
             }
         } else {
-            Err(ext_php_rs::exception::PhpException::from_class::<RocksDBException>(
-                "No active transaction".to_string(),
-            ))
+            Err(ext_php_rs::exception::PhpException::from_class::<
+                RocksDBException,
+            >("No active transaction".to_string()))
         }
     }
 }

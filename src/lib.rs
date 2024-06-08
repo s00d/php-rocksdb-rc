@@ -1,7 +1,6 @@
 #![cfg_attr(all(windows, target_arch = "x86_64"), feature(abi_vectorcall))]
 #![no_main]
 
-
 mod backup;
 mod transaction;
 mod write_batch;
@@ -11,18 +10,18 @@ use ext_php_rs::error::Error;
 use ext_php_rs::prelude::*;
 use ext_php_rs::types::{ZendHashTable, Zval};
 use ext_php_rs::zend::{ce, ModuleEntry};
+use ext_php_rs::{info_table_end, info_table_row, info_table_start};
+use fs2::FileExt;
 use json_patch::Patch;
 use rust_rocksdb::{
     ColumnFamilyDescriptor, DBWithThreadMode, MergeOperands, Options, SingleThreaded, DB,
 };
 use serde_json::{from_value, Value};
 use std::collections::HashMap;
-use std::time::Duration;
-use ext_php_rs::{info_table_end, info_table_row, info_table_start};
 use std::fs::File;
 use std::path::Path;
 use std::thread;
-use fs2::FileExt;
+use std::time::Duration;
 
 use crate::backup::RocksDBBackup;
 use crate::transaction::RocksDBTransaction;
@@ -90,7 +89,8 @@ fn acquire_lock(lock_file: &str) -> Result<File, PhpException> {
 }
 
 fn release_lock(file: File) -> PhpResult<()> {
-    file.unlock().map_err(|e| PhpException::from(e.to_string()))?;
+    file.unlock()
+        .map_err(|e| PhpException::from(e.to_string()))?;
     Ok(())
 }
 
@@ -142,22 +142,25 @@ impl RocksDB {
             Ok(db) => Ok(RocksDB {
                 db,
                 lock_handle: Some(lock_handle),
-                position: None
+                position: None,
             }),
             Err(e) => {
                 let _ = release_lock(lock_handle);
                 Err(e.to_string().into())
-            },
+            }
         }
     }
 
     #[destructor]
     pub fn __destruct(&self) {
         if let Some(lock_handle) = &self.lock_handle {
-            let _ = release_lock(lock_handle.try_clone().expect("Failed to clone file handle"));
+            let _ = release_lock(
+                lock_handle
+                    .try_clone()
+                    .expect("Failed to clone file handle"),
+            );
         }
     }
-
 
     pub fn put(&self, key: String, value: String, cf_name: Option<String>) -> PhpResult<()> {
         match cf_name {

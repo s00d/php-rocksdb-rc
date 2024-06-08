@@ -1,8 +1,8 @@
+use crate::RocksDBException;
 use ext_php_rs::prelude::*;
 use rust_rocksdb::{Options, WriteBatchWithTransaction, DB};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use crate::RocksDBException;
 
 #[php_class]
 pub struct RocksDBWriteBatch {
