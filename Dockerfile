@@ -9,7 +9,7 @@ FROM php:${FROM_PHP}-fpm-${FROM_DISTRO}
 
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
-RUN apt-get update && apt install curl build-essential gcc libclang-dev make openssl libssl-dev git libc6-dev -y
+RUN apt-get update && apt install curl build-essential gcc libclang-dev make openssl libssl-dev git -y
 
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 

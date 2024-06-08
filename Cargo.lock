@@ -945,6 +945,7 @@ dependencies = [
  "ext-php-rs",
  "fs2",
  "json-patch",
+ "libc",
  "rand",
  "rust-rocksdb",
  "serde_json",
