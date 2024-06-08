@@ -8,7 +8,7 @@ path = "src/lib.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-ext-php-rs = "*"
+ext-php-rs = "0.12"
 json-patch = "2.0.0"
 rust-rocksdb = { version = "^0.26", features = ["multi-threaded-cf"] }
 serde_json = "1.0.117"
@@ -27,6 +27,3 @@ strip = true # Удаление символов отладки
 
 [dev-dependencies]
 rand = "0.8.5"
-
-[features]
-no_main = []

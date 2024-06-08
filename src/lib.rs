@@ -1,5 +1,4 @@
 #![cfg_attr(all(windows, target_arch = "x86_64"), feature(abi_vectorcall))]
-#![no_main]
 
 mod backup;
 mod transaction;
