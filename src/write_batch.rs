@@ -2,6 +2,7 @@ use ext_php_rs::prelude::*;
 use rust_rocksdb::{Options, WriteBatchWithTransaction, DB};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use crate::RocksDBException;
 
 #[php_class]
 pub struct RocksDBWriteBatch {
@@ -109,7 +110,7 @@ impl RocksDBWriteBatch {
         if let Some(wb) = batch.take() {
             self.db
                 .write(wb)
-                .map_err(|e| PhpException::from(e.to_string()))?;
+                .map_err(|e| PhpException::from_class::<RocksDBException>(e.to_string()))?;
         } else {
             return Err("WriteBatch not initialized".into());
         }

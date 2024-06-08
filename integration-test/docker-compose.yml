@@ -10,8 +10,8 @@ services:
     volumes:
       - ./:/var/www/html
       # You may want to rename these files.
-      - ./module.ini:/usr/local/etc/php/conf.d/libphp_rocksdb_rc.ini
-      - ./module.so:/usr/local/lib/php/extensions/no-debug-non-zts-20210902/libphp_rocksdb_rc.so
+      - ./module.ini:/usr/local/etc/php/conf.d/librocksdb.ini
+      - ./module.so:/usr/local/lib/php/extensions/no-debug-non-zts-20210902/librocksdb.so
     ulimits:
       core:
         soft: -1

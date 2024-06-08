@@ -30,7 +30,7 @@ You can download pre-built binaries from the [releases page](https://github.com/
 3. Add the following line to your `php.ini` file:
 
     ```ini
-    extension=php_rocksdb_rc.so
+    extension=librocksdb.so
     ```
 
 4. Restart your web server or PHP-FPM to load the extension.
@@ -42,7 +42,7 @@ You can download pre-built binaries from the [releases page](https://github.com/
 3. Add the following line to your `php.ini` file:
 
     ```ini
-    extension=php_rocksdb_rc.dylib
+    extension=librocksdb.dylib
     ```
 
 4. Restart your web server or PHP-FPM to load the extension.
@@ -98,19 +98,19 @@ To build the extension from source, you will need Rust and Cargo installed. Foll
    - **On Linux**:
 
        ```sh
-       cp target/release/libphp_rocksdb_rc.so /usr/lib/php/extensions/
+       cp target/release/librocksdb.so /usr/lib/php/extensions/
        ```
 
    - **On macOS**:
 
        ```sh
-       cp target/release/libphp_rocksdb_rc.dylib /usr/local/lib/php/extensions/
+       cp target/release/librocksdb.dylib /usr/local/lib/php/extensions/
        ```
 
    - **On Windows**:
 
        ```sh
-       copy target\release\php_rocksdb_rc.dll C:\path\to\php\ext\
+       copy target\release\librocksdb.dll C:\path\to\php\ext\
        ```
 
 4. Add the following line to your `php.ini` file:
@@ -118,13 +118,13 @@ To build the extension from source, you will need Rust and Cargo installed. Foll
    - **On Linux and macOS**:
 
        ```ini
-       extension=libphp_rocksdb_rc.so
+       extension=librocksdb.so
        ```
 
    - **On Windows**:
 
        ```ini
-       extension=php_rocksdb_rc.dll
+       extension=librocksdb.dll
        ```
 
 5. Restart your web server or PHP-FPM to load the extension.
@@ -930,7 +930,7 @@ $iterator = new \RocksDBIterator($dbPath); // Now you can create a new instance
 
 ## Enabling Autocompletion in PhpStorm
 
-To enable autocompletion for the `php_rocksdb_rc` extension in PhpStorm, follow these steps:
+To enable autocompletion for the `librocksdb` extension in PhpStorm, follow these steps:
 
 1. **Download the Stub File**
 
@@ -940,7 +940,7 @@ To enable autocompletion for the `php_rocksdb_rc` extension in PhpStorm, follow 
 
    Save the `.php_rocksdb_rc.php` file in your project directory.
 
-After completing these steps, you should have autocompletion support for the `php_rocksdb_rc` extension in PhpStorm.
+After completing these steps, you should have autocompletion support for the `librocksdb` extension in PhpStorm.
 
 ## Contributing
 

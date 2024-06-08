@@ -1,4 +1,6 @@
 #![cfg_attr(all(windows, target_arch = "x86_64"), feature(abi_vectorcall))]
+#![no_main]
+
 
 mod backup;
 mod transaction;
@@ -8,6 +10,7 @@ use ext_php_rs::convert::IntoZval;
 use ext_php_rs::error::Error;
 use ext_php_rs::prelude::*;
 use ext_php_rs::types::{ZendHashTable, Zval};
+use ext_php_rs::zend::{ce, ModuleEntry};
 use json_patch::Patch;
 use rust_rocksdb::{
     ColumnFamilyDescriptor, DBWithThreadMode, MergeOperands, Options, SingleThreaded, DB,
@@ -15,10 +18,20 @@ use rust_rocksdb::{
 use serde_json::{from_value, Value};
 use std::collections::HashMap;
 use std::time::Duration;
+use ext_php_rs::{info_table_end, info_table_row, info_table_start};
+use std::fs::File;
+use std::path::Path;
+use std::thread;
+use fs2::FileExt;
 
 use crate::backup::RocksDBBackup;
 use crate::transaction::RocksDBTransaction;
 use crate::write_batch::RocksDBWriteBatch;
+
+#[php_class(name = "RocksDB\\Exception\\RocksDBException")]
+#[extends(ce::exception())]
+#[derive(Default)]
+pub struct RocksDBException;
 
 fn json_merge(
     _new_key: &[u8],
@@ -62,16 +75,39 @@ impl IntoZval for KeyValueResult {
     }
 }
 
-#[php_class]
+fn acquire_lock(lock_file: &str) -> Result<File, PhpException> {
+    let path = Path::new(lock_file);
+    let file = File::create(&path).map_err(|e| PhpException::from(e.to_string()))?;
+
+    loop {
+        match file.try_lock_exclusive() {
+            Ok(_) => break,
+            Err(_) => thread::sleep(Duration::from_millis(100)),
+        }
+    }
+
+    Ok(file)
+}
+
+fn release_lock(file: File) -> PhpResult<()> {
+    file.unlock().map_err(|e| PhpException::from(e.to_string()))?;
+    Ok(())
+}
+
+#[php_class(name = "RocksDB")]
 pub struct RocksDB {
     pub db: DBWithThreadMode<SingleThreaded>,
+    lock_handle: Option<File>,
     position: Option<Vec<u8>>,
 }
 
-#[php_impl]
+#[php_impl(rename_methods = "camelCase")]
 impl RocksDB {
     #[constructor]
     pub fn __construct(path: String, ttl_secs: Option<u64>) -> PhpResult<Self> {
+        let lock_file = format!("{}-php.lock", path);
+        let lock_handle = acquire_lock(&lock_file)?;
+
         let mut opts = Options::default();
         opts.create_if_missing(true);
         opts.set_max_open_files(1000);
@@ -103,10 +139,25 @@ impl RocksDB {
         };
 
         match db {
-            Ok(db) => Ok(RocksDB { db, position: None }),
-            Err(e) => Err(e.to_string().into()),
+            Ok(db) => Ok(RocksDB {
+                db,
+                lock_handle: Some(lock_handle),
+                position: None
+            }),
+            Err(e) => {
+                let _ = release_lock(lock_handle);
+                Err(e.to_string().into())
+            },
         }
     }
+
+    #[destructor]
+    pub fn __destruct(&self) {
+        if let Some(lock_handle) = &self.lock_handle {
+            let _ = release_lock(lock_handle.try_clone().expect("Failed to clone file handle"));
+        }
+    }
+
 
     pub fn put(&self, key: String, value: String, cf_name: Option<String>) -> PhpResult<()> {
         match cf_name {
@@ -400,7 +451,7 @@ impl RocksDB {
         let live_files = self
             .db
             .live_files()
-            .map_err(|e| PhpException::from(e.to_string()))?;
+            .map_err(|e| PhpException::from_class::<RocksDBException>(e.to_string()))?;
         let live_file_names = live_files.iter().map(|lf| lf.name.clone()).collect();
         Ok(live_file_names)
     }
@@ -503,7 +554,14 @@ impl RocksDB {
     }
 }
 
+#[no_mangle]
+pub extern "C" fn php_module_info(_module: *mut ModuleEntry) {
+    info_table_start!();
+    info_table_row!("RocksDB", "enabled");
+    info_table_end!();
+}
+
 #[php_module]
 pub fn module(module: ModuleBuilder) -> ModuleBuilder {
-    module
+    module.info_function(php_module_info)
 }

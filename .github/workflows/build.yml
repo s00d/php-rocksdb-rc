@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 env:
-  EXTENSION_NAME: php_rocksdb_rc
+  EXTENSION_NAME: rocksdb
 
 jobs:
   tests:

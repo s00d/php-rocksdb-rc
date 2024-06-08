@@ -1,6 +1,6 @@
 [package]
-name = "php_rocksdb_rc"
-version = "0.5.1"
+name = "rocksdb"
+version = "0.5.2"
 edition = "2021"
 
 [lib]
@@ -12,6 +12,7 @@ ext-php-rs = "*"
 json-patch = "2.0.0"
 rust-rocksdb = { version = "^0.26", features = ["multi-threaded-cf"] }
 serde_json = "1.0.117"
+fs2 = "0.4"
 
 [profile.integration-test]
 inherits = "dev"
